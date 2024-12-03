@@ -1,4 +1,4 @@
-package ch.zkb.t632;
+package ch.zkb.t632.java;
 
 import java.io.IOException;
 import java.nio.file.Files;
