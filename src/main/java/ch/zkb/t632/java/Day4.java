@@ -30,7 +30,6 @@ public class Day4 {
 
   private static final String MAS_REV = "SAM";
 
-  @PostConstruct
   public void solve() throws IOException {
     System.out.println("Test 1:   " + task1(puzzle4_test));
     System.out.println("Result 1: " + task1(puzzle4));
