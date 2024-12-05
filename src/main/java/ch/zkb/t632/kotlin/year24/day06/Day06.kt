@@ -1,13 +1,13 @@
-package ch.zkb.t632.kotlin.year24.day04
+package ch.zkb.t632.kotlin.year24.day06
 
 import ch.zkb.t632.kotlin.check
 import ch.zkb.t632.kotlin.readInput
 
 fun main() {
-    val testInput1 = readInput("2024", "Day04_test_part1")
-    check(part1(testInput1), 161)
+    val testInput1 = readInput("2024", "Day06_test")
+    check(part1(testInput1), 0)
 
-    val input = readInput("2024", "Day04")
+    val input = readInput("2024", "Day06")
     println(part1(input))
 }
 
