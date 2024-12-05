@@ -75,7 +75,7 @@ public class Day5 {
   }
 
   private boolean checkInstruction(List<Integer> instruction, HashMap<Integer, Set<Integer>> orderMap) {
-    return Comparators.isInOrder(instruction, (new Comp(orderMap)).reversed());
+    return Comparators.isInOrder(instruction, new Comp(orderMap));
   }
 
   private Integer middle(List<Integer> instructions) {
@@ -99,11 +99,11 @@ public class Day5 {
     public int compare(Integer o1, Integer o2) {
       var afters = orderMap.get(o1);
       if (afters != null && afters.contains(o2)) {
-        return -1;
+        return 1;
       }
       var afters2 = orderMap.get(o2);
       if (afters2 != null && afters2.contains(o1)) {
-        return 1;
+        return -1;
       }
       return 0;
     }
