@@ -4,17 +4,18 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import jakarta.annotation.PostConstruct;
-
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import com.google.common.collect.Comparators;
 
 @Service
 public class Day5 {
@@ -31,7 +32,6 @@ public class Day5 {
   @Value("input/puzzle5_print.csv")
   private Path puzzle5_print;
 
-  @PostConstruct
   public void solve() throws IOException {
     System.out.println("Test 1:   " + task1(puzzle5_test, puzzle5_testprint));
     System.out.println("Result 1: " + task1(puzzle5, puzzle5_print));
@@ -75,19 +75,7 @@ public class Day5 {
   }
 
   private boolean checkInstruction(List<Integer> instruction, HashMap<Integer, Set<Integer>> orderMap) {
-    for (int i = 0; i < instruction.size(); i++) {
-      var current = instruction.get(i);
-      var befors = orderMap.get(current);
-      if (befors != null) {
-        for (int r = i + 1; r < instruction.size(); r++) {
-          var rest = instruction.get(r);
-          if (befors.contains(rest)) {
-            return false;
-          }
-        }
-      }
-    }
-    return true;
+    return Comparators.isInOrder(instruction, (new Comp(orderMap)).reversed());
   }
 
   private Integer middle(List<Integer> instructions) {
@@ -95,7 +83,20 @@ public class Day5 {
   }
 
   private List<Integer> order(List<Integer> instruction, HashMap<Integer, Set<Integer>> orderMap) {
-    instruction.sort((o1, o2) -> {
+    instruction.sort(new Comp(orderMap));
+    return instruction;
+  }
+
+  private static class Comp implements Comparator<Integer> {
+
+    private final HashMap<Integer, Set<Integer>> orderMap;
+
+    Comp(HashMap<Integer, Set<Integer>> orderMap) {
+      this.orderMap = orderMap;
+    }
+
+    @Override
+    public int compare(Integer o1, Integer o2) {
       var afters = orderMap.get(o1);
       if (afters != null && afters.contains(o2)) {
         return -1;
@@ -105,8 +106,8 @@ public class Day5 {
         return 1;
       }
       return 0;
-    });
-    return instruction;
+    }
   }
-
 }
+
+

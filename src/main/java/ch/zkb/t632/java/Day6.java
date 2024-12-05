@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import jakarta.annotation.PostConstruct;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +18,7 @@ public class Day6 {
   @Value("input/puzzle6.csv")
   private Path puzzle6;
 
+  @PostConstruct
   public void solve() throws IOException {
     System.out.println("Test 1:   " + task1(puzzle6_test));
     System.out.println("Result 1: " + task1(puzzle6));
