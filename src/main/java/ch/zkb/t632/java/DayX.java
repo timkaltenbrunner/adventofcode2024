@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
-public class Day6 {
+public class DayX {
 
   @Value("input/puzzle6_test.csv")
   private Path puzzle6_test;
