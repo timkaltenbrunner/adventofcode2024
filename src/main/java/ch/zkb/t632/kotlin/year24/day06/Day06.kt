@@ -5,19 +5,23 @@ import ch.zkb.t632.kotlin.readInput
 
 fun main() {
     val testInput1 = readInput("2024", "Day06_test")
-    check(part1(testInput1), 41)
+    val solution_test = part1(testInput1)
 
     val input = readInput("2024", "Day06")
-    println(part1(input))
+    val solution = part1(input)
+
+    check(part2(testInput1, solution_test), 6)
+    println(part2(input, solution))
+
+
 }
 
-private fun part1(input: List<String>): Int {
+private fun part1(input: List<String>): List<String> {
     var localInput = input
     var next = localInput.findPosition()
-    localInput = input.setX(next)
+    localInput = input.setX(next, 'X')
     println(next)
     print(localInput)
-
     var steps = 1
     do {
         next = Pair(next.first - 1, next.second)
@@ -25,22 +29,71 @@ private fun part1(input: List<String>): Int {
         when (nextChar) {
             '#' -> {
                 next = Pair(next.first + 1, next.second)
-                println("Before: " + next)
                 next = Pair((input.get(0).length - 1) - next.second, next.first)
-                println("After: " + next)
-                println("Steps: " + steps)
                 localInput = localInput.turnRight()
-                print(localInput)
+
             }
 
             'X' -> {}
             else -> {
-                localInput = localInput.setX(next)
+                localInput = localInput.setX(next, 'X')
                 steps++
             }
         }
     } while (nextChar != null)
-    return steps - 1
+    val fixRot = steps % 4
+    repeat(fixRot) {
+        localInput = localInput.turnRight()
+    }
+    return localInput
+}
+
+private fun part2(originalInput: List<String>, solution: List<String>): Int {
+    var result = 0
+    for (y in solution.indices) {
+        val row = solution.get(y)
+        for (x in row.indices) {
+            if (row[x] == 'X') {
+                val pair = Pair(y, x)
+                if (part2Solver(originalInput.setX(pair, '#'))) {
+                    println()
+                    println("Pair: " + pair)
+                    print(originalInput.setX(pair, 'O'))
+                    result++
+                }
+            }
+        }
+    }
+    return result
+}
+
+private fun part2Solver(input: List<String>): Boolean {
+    var localInput = input
+    var next = localInput.findPosition()
+    localInput = input.setX(next, 'X')
+    var steps = 1
+    var samePath = 0
+    do {
+        next = Pair(next.first - 1, next.second)
+        val nextChar = localInput.get2D(next.first, next.second)
+        when (nextChar) {
+            '#' -> {
+                next = Pair(next.first + 1, next.second)
+                localInput = localInput.setX(next, 'X')
+                next = Pair((input.get(0).length - 1) - next.second, next.first)
+                localInput = localInput.turnRight()
+
+            }
+
+            'X' -> samePath++
+            else -> {
+                samePath = 0
+                localInput = localInput.setX(next, 'X')
+                steps++
+            }
+        }
+    } while (nextChar != null && samePath < 100)
+    return samePath >= 100
 }
 
 private fun print(localInput: List<String>) {
@@ -88,14 +141,15 @@ fun List<String>.turnRight(): List<String> {
     return list;
 }
 
-fun List<String>.setX(point: Pair<Int, Int>): List<String> {
+
+fun List<String>.setX(point: Pair<Int, Int>, c: Char): List<String> {
     val firstRow = get(0)
     val list = mutableListOf<String>()
     for (y in indices) {
         var line = ""
         for (x in firstRow.indices) {
             if (y == point.first && x == point.second) {
-                line += "X"
+                line += c
             } else {
                 line += get2D(y, x)
             }
