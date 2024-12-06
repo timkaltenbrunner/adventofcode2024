@@ -18,7 +18,7 @@ fun main() {
 
 private fun part1(input: List<String>): List<String> {
     var localInput = input
-    var next = localInput.findPosition()
+    var next = localInput.findStart()
     localInput = input.setX(next, 'X')
     println(next)
     print(localInput)
@@ -69,7 +69,7 @@ private fun part2(originalInput: List<String>, solution: List<String>): Int {
 
 private fun part2Solver(input: List<String>): Boolean {
     var localInput = input
-    var next = localInput.findPosition()
+    var next = localInput.findStart()
     localInput = input.setX(next, 'X')
     var steps = 1
     var samePath = 0
@@ -106,7 +106,7 @@ private fun print(localInput: List<String>) {
     }
 }
 
-fun List<String>.findPosition(): Pair<Int, Int> {
+fun List<String>.findStart(): Pair<Int, Int> {
     for (y in indices) {
         val row = get(y)
         for (x in row.indices) {
