@@ -48,7 +48,7 @@ private fun part1(input: List<String>): List<String> {
     return localInput
 }
 
-private fun part2(originalInput: List<String>, solution: List<String>): Int {
+fun part2(originalInput: List<String>, solution: List<String>): Int {
     var result = 0
     for (y in solution.indices) {
         val row = solution.get(y)

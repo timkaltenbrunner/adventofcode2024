@@ -9,6 +9,9 @@ fun main() {
     val input = readInput("2024", "Day06")
     val solution = part1(input.toMutable())
 
+    println("Test Result part 2: " + part2(testInput1, solution_test))
+    println("Result part 2: " + part2(input, solution))
+
 }
 
 enum class Direction() {
@@ -33,6 +36,22 @@ private fun part1(input: List<MutableList<Char>>): List<MutableList<Char>> {
     println("Number of Steps: " + input.walk())
     input.print()
     return input
+}
+
+private fun part2(input: List<String>, solution: List<MutableList<Char>>): Int {
+
+    var result = 0
+    for (y in solution.indices) {
+        val row = solution.get(y)
+        for (x in row.indices) {
+            if (row[x] == 'X') {
+                if (input.toMutable().setX(Pair(y, x), '#').hasCycle()) {
+                    result++
+                }
+            }
+        }
+    }
+    return result
 }
 
 private fun List<MutableList<Char>>.walk(): Int {
@@ -61,6 +80,37 @@ private fun List<MutableList<Char>>.walk(): Int {
         }
     } while (char != null)
     return steps
+}
+
+private fun List<MutableList<Char>>.hasCycle(): Boolean {
+    val pos = this.findStart()
+    setX(pos, 'X')
+    var steps = 0
+    var nextPos = pos
+    var direction = Direction.UP
+    var samePath = 0;
+    do {
+        val char = get2D(nextPos)
+        when (char) {
+            '#' -> {
+                nextPos = nextPos.prev(direction)
+                direction = direction.rotateRight()
+            }
+
+            'X' -> {
+                nextPos = nextPos.next(direction)
+                samePath++
+            }
+
+            else -> {
+                samePath = 0
+                setX(nextPos, 'X')
+                nextPos = nextPos.next(direction)
+                steps++
+            }
+        }
+    } while (char != null && samePath < 1000)
+    return samePath >= 1000
 }
 
 private fun Pair<Int, Int>.next(direction: Direction): Pair<Int, Int> = when (direction) {
@@ -113,7 +163,7 @@ fun List<MutableList<Char>>.get2D(point: Pair<Int, Int>): Char? {
     return null
 }
 
-fun List<MutableList<Char>>.setX(point: Pair<Int, Int>, c: Char) {
+fun List<MutableList<Char>>.setX(point: Pair<Int, Int>, c: Char): List<MutableList<Char>> {
     val (y, x) = point
     if (y in indices) {
         val row = get(y)
@@ -121,4 +171,5 @@ fun List<MutableList<Char>>.setX(point: Pair<Int, Int>, c: Char) {
             row[x] = c
         }
     }
+    return this;
 }
