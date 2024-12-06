@@ -4,107 +4,97 @@ import ch.zkb.t632.kotlin.check
 import ch.zkb.t632.kotlin.readInput
 
 fun main() {
-    val testInput1 = readInput("2024", "Day06_test")
-    val solution_test = part1(testInput1)
+    val testInput = readInput("2024", "Day06_test")
+    val solutionTest = testInput.toMutable()
+    check(part1(solutionTest, testInput.findStart()), 41)
 
     val input = readInput("2024", "Day06")
-    val solution = part1(input)
+    val solutionPart1 = input.toMutable()
 
-    check(part2(testInput1, solution_test), 6)
-    println(part2(input, solution))
+    val resultPart1 = part1(solutionPart1, input.findStart())
+    solutionPart1.print()
+    println("Solution of Part1: $resultPart1")
 
+    check(part2(testInput, solutionTest, testInput.findStart()), 6)
+    println("Solution of Part2: ${part2(input, solutionPart1, input.findStart())}")
 
 }
 
-private fun part1(input: List<String>): List<String> {
-    var localInput = input
-    var next = localInput.findStart()
-    localInput = input.setX(next, 'X')
-    println(next)
-    print(localInput)
-    var steps = 1
-    do {
-        next = Pair(next.first - 1, next.second)
-        val nextChar = localInput.get2D(next.first, next.second)
-        when (nextChar) {
-            '#' -> {
-                next = Pair(next.first + 1, next.second)
-                next = Pair((input.get(0).length - 1) - next.second, next.first)
-                localInput = localInput.turnRight()
+enum class Direction() {
+    UP {
+        override fun rotateRight() = RIGHT
+    },
+    DOWN {
+        override fun rotateRight() = LEFT
+    },
+    LEFT {
+        override fun rotateRight() = UP
+    },
+    RIGHT {
+        override fun rotateRight() = DOWN
+    };
 
-            }
-
-            'X' -> {}
-            else -> {
-                localInput = localInput.setX(next, 'X')
-                steps++
-            }
-        }
-    } while (nextChar != null)
-    val fixRot = steps % 4
-    repeat(fixRot) {
-        localInput = localInput.turnRight()
-    }
-    return localInput
+    abstract fun rotateRight(): Direction
 }
 
-fun part2(originalInput: List<String>, solution: List<String>): Int {
-    var result = 0
-    for (y in solution.indices) {
-        val row = solution.get(y)
+
+private fun part1(input: List<MutableList<Char>>, start: Pair<Int, Int>): Int? = input.walkWithCycleDetection(start)
+
+private fun pathPoints(input: List<MutableList<Char>>): List<Pair<Int, Int>> = buildList() {
+    for (y in input.indices) {
+        val row = input.get(y)
         for (x in row.indices) {
-            if (row[x] == 'X') {
-                val pair = Pair(y, x)
-                if (part2Solver(originalInput.setX(pair, '#'))) {
-                    println()
-                    println("Pair: " + pair)
-                    print(originalInput.setX(pair, 'O'))
-                    result++
-                }
-            }
+            if (row.get(x) == 'X')
+                add(Pair(y, x))
         }
     }
-    return result
 }
 
-private fun part2Solver(input: List<String>): Boolean {
-    var localInput = input
-    var next = localInput.findStart()
-    localInput = input.setX(next, 'X')
-    var steps = 1
-    var samePath = 0
-    do {
-        next = Pair(next.first - 1, next.second)
-        val nextChar = localInput.get2D(next.first, next.second)
-        when (nextChar) {
-            '#' -> {
-                next = Pair(next.first + 1, next.second)
-                localInput = localInput.setX(next, 'X')
-                next = Pair((input.get(0).length - 1) - next.second, next.first)
-                localInput = localInput.turnRight()
+private fun part2(input: List<String>, solution: List<MutableList<Char>>, start: Pair<Int, Int>): Int = pathPoints(solution).map {
+    input.toMutable().setX(it, '#').walkWithCycleDetection(start)
+}.count { it == null }
 
+
+private fun List<MutableList<Char>>.walkWithCycleDetection(start: Pair<Int, Int>): Int? {
+    setX(start, 'X')
+    var steps = 0
+    var nextPos = start
+    var direction = Direction.UP
+    var samePath = 0;
+    do {
+        val char = get2D(nextPos)
+        when (char) {
+            '#' -> {
+                nextPos = nextPos.prev(direction)
+                direction = direction.rotateRight()
             }
 
-            'X' -> samePath++
+            'X' -> {
+                nextPos = nextPos.next(direction)
+                samePath++
+            }
+
             else -> {
                 samePath = 0
-                localInput = localInput.setX(next, 'X')
+                setX(nextPos, 'X')
+                nextPos = nextPos.next(direction)
                 steps++
             }
         }
-    } while (nextChar != null && samePath < 100)
-    return samePath >= 100
+    } while (char != null && samePath < 1000)
+    return if (samePath >= 1000) null else steps
 }
 
-private fun print(localInput: List<String>) {
-    val firstRow = localInput.get(0)
-    for (y in localInput.indices) {
-        println()
-        for (x in firstRow.indices) {
-            print(localInput.get2D(y, x))
-        }
-    }
+private fun Pair<Int, Int>.next(direction: Direction): Pair<Int, Int> = when (direction) {
+    Direction.UP -> Pair(first - 1, second)
+    Direction.DOWN -> Pair(first + 1, second)
+    Direction.LEFT -> Pair(first, second - 1)
+    Direction.RIGHT -> Pair(first, second + 1)
 }
+
+private fun Pair<Int, Int>.prev(direction: Direction): Pair<Int, Int> = next(direction.rotateRight().rotateRight())
+
+fun List<String>.toMutable(): List<MutableList<Char>> = toMutableList().map { it.toMutableList() }
 
 fun List<String>.findStart(): Pair<Int, Int> {
     for (y in indices) {
@@ -117,7 +107,8 @@ fun List<String>.findStart(): Pair<Int, Int> {
     return Pair(-1, -1)
 }
 
-fun List<String>.get2D(y: Int, x: Int): Char? {
+fun List<MutableList<Char>>.get2D(point: Pair<Int, Int>): Char? {
+    val (y, x) = point
     if (y in indices) {
         val row = get(y)
         if (x in row.indices) {
@@ -127,35 +118,24 @@ fun List<String>.get2D(y: Int, x: Int): Char? {
     return null
 }
 
-fun List<String>.turnRight(): List<String> {
-    val firstRow = get(0)
-    val list = mutableListOf<String>()
-
-    for (y in indices.reversed()) {
-        var line = ""
-        for (x in firstRow.indices) {
-            line += get2D(x, y)
+fun List<MutableList<Char>>.setX(point: Pair<Int, Int>, c: Char): List<MutableList<Char>> {
+    val (y, x) = point
+    if (y in indices) {
+        val row = get(y)
+        if (x in row.indices) {
+            row[x] = c
         }
-        list.add(line)
     }
-    return list;
+    return this;
 }
 
-
-fun List<String>.setX(point: Pair<Int, Int>, c: Char): List<String> {
+private fun List<MutableList<Char>>.print() {
     val firstRow = get(0)
-    val list = mutableListOf<String>()
     for (y in indices) {
-        var line = ""
+        println()
         for (x in firstRow.indices) {
-            if (y == point.first && x == point.second) {
-                line += c
-            } else {
-                line += get2D(y, x)
-            }
-
+            print(get2D(Pair(y, x)))
         }
-        list.add(line)
     }
-    return list;
+    println()
 }
