@@ -19,19 +19,9 @@ fun main() {
 
 }
 
-private fun part1(input: List<String>): Long {
-    val calibartions =
-        input.map { it.split(": ") }.map { Calibration(it.get(0).toLong(), parseInputs(it.get(1))) }.toList()
+private fun part1(input: List<String>): Long = calculate(calculateCalibrations(input), listOf(Operator.SUM, Operator.MULTIPLY))
 
-    return calculate(calibartions, listOf(Operator.SUM, Operator.MULTIPLY))
-}
-
-private fun part2(input: List<String>): Long {
-    val calibartions =
-        input.map { it.split(": ") }.map { Calibration(it.get(0).toLong(), parseInputs(it.get(1))) }.toList()
-
-    return calculate(calibartions, listOf(Operator.SUM, Operator.MULTIPLY, Operator.CON))
-}
+private fun part2(input: List<String>): Long = calculate(calculateCalibrations(input), listOf(Operator.SUM, Operator.MULTIPLY, Operator.CON))
 
 private enum class Operator {
     SUM {
@@ -50,6 +40,10 @@ private enum class Operator {
     abstract fun calc(a: Long, b: Long): Long
     abstract fun neutral(): Long
 }
+
+private fun calculateCalibrations(input: List<String>) =
+    input.map { it.split(": ") }.map { Calibration(it.get(0).toLong(), parseInputs(it.get(1))) }.toList()
+
 
 private data class Calibration(val testNumber: Long, val inputs: ArrayDeque<Long>)
 
