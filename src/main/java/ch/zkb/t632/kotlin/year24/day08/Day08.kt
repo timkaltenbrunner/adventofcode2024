@@ -11,42 +11,17 @@ fun main() {
     val resultPart1 = part1(input)
 
     println("Solution of Part1: $resultPart1")
-    /*
-        check(part2(testInput), 11387)
-        val resultPart2 = part2(input)
+    check(part2(testInput), 34)
+    val resultPart2 = part2(input)
 
-        println("Solution of Part2: $resultPart2")
+    println("Solution of Part2: $resultPart2")
 
-     */
 
 }
 
-private fun part1(input: List<String>): Int = solve(input.parseInputs())
+private fun part1(input: List<String>): Int = solve(input.parseInputs(), ::findLocations)
 
-private fun solve(parseInputs: AMap): Int {
-    var res = mutableSetOf<Pos>()
-    for (currSender in parseInputs.sender.values) {
-        res += findLocations(currSender).filter { (a, b) -> a in parseInputs.rowRange && b in parseInputs.rowRange }
-    }
-    return res.count()
-}
-
-private fun findLocations(currSender: Set<Pos>): Set<Pos> {
-    val localSender = ArrayDeque(currSender)
-    var res = mutableSetOf<Pos>()
-    while (localSender.isNotEmpty()) {
-        val current = localSender.removeFirst()
-        for (sender in localSender) {
-            var dist = sender - current
-            res += current - dist
-            res += sender + dist
-        }
-    }
-    return res
-}
-
-private fun part2(input: List<String>): Long = 0
-
+private fun part2(input: List<String>): Int = solve(input.parseInputs(), ::findAllLocations)
 
 private data class Pos(val x: Int, val y: Int) {
     operator fun plus(other: Pos): Pos = Pos(x + other.x, y + other.y)
@@ -54,6 +29,50 @@ private data class Pos(val x: Int, val y: Int) {
 }
 
 private data class AMap(val sender: Map<Char, Set<Pos>>, val colRange: IntRange, val rowRange: IntRange)
+
+private fun solve(parseInputs: AMap, locationFinder : (Set<Pos>, IntRange, IntRange) -> Set<Pos>): Int = parseInputs.sender.values.flatMap { locationFinder(it, parseInputs.colRange, parseInputs.rowRange) }.toSet().count()
+
+private fun findLocations(currSender: Set<Pos>, colRange: IntRange, rowRange: IntRange): Set<Pos> {
+    val localSender = ArrayDeque(currSender)
+    var res = mutableSetOf<Pos>()
+    while (localSender.isNotEmpty()) {
+        val current = localSender.removeFirst()
+        for (sender in localSender) {
+            val dist = sender - current
+            val posA = current - dist
+            if (posA.y in colRange && posA.x in rowRange) {
+                res += posA
+            }
+            val posB = sender + dist
+            if (posB.y in colRange && posB.x in rowRange) {
+                res += posB
+            }
+        }
+    }
+    return res
+}
+
+private fun findAllLocations(currSender: Set<Pos>, colRange: IntRange, rowRange: IntRange): Set<Pos> {
+    val localSender = ArrayDeque(currSender)
+    var res = mutableSetOf<Pos>()
+    while (localSender.isNotEmpty()) {
+        val current = localSender.removeFirst()
+        for (sender in localSender) {
+            var dist = sender - current
+            var next = current
+            while (next.y in colRange && next.x in rowRange) {
+                res += next
+                next = next - dist
+            }
+            next = current
+            while (next.y in colRange && next.x in rowRange) {
+                res += next
+                next = next + dist
+            }
+        }
+    }
+    return res
+}
 
 private fun List<String>.parseInputs(): AMap {
     val map: MutableMap<Char, MutableSet<Pos>> = mutableMapOf()
