@@ -17,13 +17,7 @@ fun main() {
 private fun part2(input: List<String>): Long = solve(parseInputs(input.first()))
 
 
-private fun solve(parsedInputs: List<Long>): Long =
-    multiply(compact(parsedInputs).print()).print().map { it.toLong() }.sum()
-
-private fun List<Long>.print(): List<Long> {
-    println(this)
-    return this
-}
+private fun solve(parsedInputs: List<Long>): Long = multiply(compact(parsedInputs)).sum()
 
 
 private fun compact(input: List<Long>): List<Long> {
