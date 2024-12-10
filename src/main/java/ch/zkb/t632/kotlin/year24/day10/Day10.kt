@@ -5,7 +5,7 @@ import ch.zkb.t632.kotlin.readInput
 
 fun main() {
     val testInput = readInput("2024", "Day10_test")
-    check(part1(testInput), 36)
+    check(part1(testInput), 81)
 
     val input = readInput("2024", "Day10")
     val resultPart1 = part1(input)
@@ -14,7 +14,7 @@ fun main() {
 
 }
 
-private data class Position(val height: Int, var reachablePos9: Set<Pair<Int, Int>>)
+private data class Position(val height: Int, var reachablePos1: Int)
 
 private fun part1(input: List<String>): Long = input.parseInputs().solve()
 
@@ -22,20 +22,19 @@ private fun part1(input: List<String>): Long = input.parseInputs().solve()
 private fun List<List<Position>>.solve(): Long {
     var ret = 0L
     for (cur in 9 downTo 0) {
-        this.print()
         for ((y, row) in this.withIndex()) {
             for ((x, pos) in row.withIndex()) {
                 if (pos.height == cur) {
-                    updateReachablePoints(pos.reachablePos9, this, cur - 1, y, x)
+                    updateReachablePoints(pos.reachablePos1, this, cur - 1, y, x)
                 }
             }
         }
     }
-
+    this.print()
     for (row in this) {
         for (pos in row) {
             if (pos.height == 0) {
-                ret += pos.reachablePos9.size
+                ret += pos.reachablePos1
             }
         }
     }
@@ -48,34 +47,28 @@ private fun List<List<Position>>.print() {
         println()
         val row = get(y)
         for (x in row.indices) {
-            print(row[x].reachablePos9)
+            print(row[x].reachablePos1)
         }
     }
     println()
 }
 
-private fun updateReachablePoints(
-    reachablePos9: Set<Pair<Int, Int>>,
-    map: List<List<Position>>,
-    toValue: Int,
-    y: Int,
-    x: Int
-) {
+private fun updateReachablePoints(reachablePos1: Int, map: List<List<Position>>, toValue: Int, y: Int, x: Int) {
     val pos1 = map.get2DValue(y, x - 1, toValue)
     if (pos1 != null) {
-        pos1.reachablePos9 += reachablePos9
+        pos1.reachablePos1 += reachablePos1
     }
     val pos2 = map.get2DValue(y, x + 1, toValue)
     if (pos2 != null) {
-        pos2.reachablePos9 += reachablePos9
+        pos2.reachablePos1 += reachablePos1
     }
     val pos3 = map.get2DValue(y - 1, x, toValue)
     if (pos3 != null) {
-        pos3.reachablePos9 += reachablePos9
+        pos3.reachablePos1 += reachablePos1
     }
     val pos4 = map.get2DValue(y + 1, x, toValue)
     if (pos4 != null) {
-        pos4.reachablePos9 += reachablePos9
+        pos4.reachablePos1 += reachablePos1
     }
 }
 
@@ -83,11 +76,11 @@ private fun updateReachablePoints(
 private fun List<String>.parseInputs(): List<List<Position>> {
     val input = this
     return buildList {
-        for ((y, row) in input.withIndex()) {
+        for (row in input) {
             add(buildList {
-                for ((x, ch) in row.withIndex()) {
+                for (ch in row) {
                     val height = ("" + ch).toInt()
-                    val reachablePos1 = if (height == 9) setOf(Pair(y, x)) else setOf()
+                    val reachablePos1 = if (height == 9) 1 else 0
                     add(Position(height, reachablePos1))
                 }
             })
