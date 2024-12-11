@@ -5,39 +5,44 @@ import ch.zkb.t632.kotlin.readInput
 
 fun main() {
     val testInput = readInput("2024", "Day11_test")
-    check(part1(testInput, 25), 55312)
+    check(parts(testInput, 25), 55312)
 
     val input = readInput("2024", "Day11")
-    val resultPart1 = part1(input, 25)
+    val resultPart1 = parts(input, 25)
 
     println("Solution of Part1: $resultPart1")
 
+    val resultPart2 = parts(input, 75)
+
+    println("Solution of Part2: $resultPart2")
+
 }
 
-private fun part1(input: List<String>, blinkTimes: Int): Int = input.parseInputs().solve(blinkTimes)
+private fun parts(input: List<String>, blinkTimes: Int): Long = input.parseInputs().solve(blinkTimes)
 
-private data class Position(val height: Int, var reachablePos9: Set<Pair<Int, Int>>, var reachablePos1: Int)
-
-
-private fun List<Long>.solve(blinkTimes: Int): Int {
-    var current = this
+private fun List<Long>.solve(blinkTimes: Int): Long {
+    var current: Map<Long, Long> = this.associateWith { 1 }
     repeat(blinkTimes) {
-        // println(current)
-        current = buildList {
-            for (stone in current) {
+        current = buildMap {
+            for ((stone, count) in current) {
                 if (stone == 0L) {
-                    add(1L)
+                    putSum(1L, count)
                 } else if (("" + stone).length % 2 == 0) {
                     val (s1, s2) = stone.split()
-                    add(s1)
-                    add(s2)
+                    putSum(s1, count)
+                    putSum(s2, count)
                 } else {
-                    add(stone * 2024)
+                    val s1 = stone * 2024
+                    putSum(s1, count)
                 }
             }
         }
     }
-    return current.count()
+    return current.values.sum()
+}
+
+private fun MutableMap<Long, Long>.putSum(s1: Long, count: Long) {
+    put(s1, getOrDefault(s1, 0) + count)
 }
 
 private fun Long.split(): Pair<Long, Long> {
