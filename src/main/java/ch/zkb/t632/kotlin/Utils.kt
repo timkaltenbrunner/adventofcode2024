@@ -80,6 +80,18 @@ fun requestEndpoint(url: String, session: String): String {
     }
 }
 
+fun <T> product(list: List<T>, repeat: Int): Sequence<List<T>> = sequence {
+    if (repeat == 1) {
+        for (item in list) yield(listOf(item))
+    } else {
+        for (item in list) {
+            for (subProduct in product(list, repeat - 1)) {
+                yield(listOf(item) + subProduct)
+            }
+        }
+    }
+}
+
 fun Array<String>.readProgramParams() = associate {
     val parameter = it.removePrefix("--")
     val name = parameter.substringBefore("=")
