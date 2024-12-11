@@ -80,7 +80,7 @@ fun requestEndpoint(url: String, session: String): String {
     }
 }
 
-fun <T> product(list: List<T>, repeat: Int): Sequence<List<T>> = sequence {
+fun <T> product(list: List<T>, repeat: Int): List<List<T>> = sequence {
     if (repeat == 1) {
         for (item in list) yield(listOf(item))
     } else {
@@ -90,7 +90,7 @@ fun <T> product(list: List<T>, repeat: Int): Sequence<List<T>> = sequence {
             }
         }
     }
-}
+}.toList()
 
 fun Array<String>.readProgramParams() = associate {
     val parameter = it.removePrefix("--")
