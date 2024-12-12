@@ -21,9 +21,7 @@ private fun part1(input: List<String>): Long = input.parseInputs().gardens().sum
 
 private fun part2(input: List<String>): Long = input.parseInputs().gardens().sumOf { it.calculateCornerFence() }
 
-private data class Pos(val x: Int, val y: Int) {
-    operator fun plus(other: Pos): Pos = Pos(x + other.x, y + other.y)
-}
+private data class Pos(val x: Int, val y: Int)
 
 private data class Area(val type: Char, val pos: Pos) {
     fun up(): Area = Area(type, Pos(pos.x, pos.y + 1))
