@@ -9,12 +9,17 @@ fun main() {
 
     val input = readInput("2024", "Day12")
     val resultPart1 = part1(input)
-
     println("Solution of Part1: $resultPart1")
+
+    check(part2(testInput), 1206)
+    val resultPart2 = part2(input)
+    println("Solution of Part2: $resultPart2")
 
 }
 
-private fun part1(input: List<String>): Long = input.parseInputs().solve()
+private fun part1(input: List<String>): Long = input.parseInputs().gardens().sumOf { it.calculateEdgeFence() }
+
+private fun part2(input: List<String>): Long = input.parseInputs().gardens().sumOf { it.calculateCornerFence() }
 
 private data class Pos(val x: Int, val y: Int) {
     operator fun plus(other: Pos): Pos = Pos(x + other.x, y + other.y)
@@ -28,7 +33,9 @@ private data class Area(val type: Char, val pos: Pos) {
 }
 
 private data class Garden(val type: Char, val areas: MutableSet<Area>) {
-    fun calculateFence(): Long = areas.count() * edgesWithoutNeighbour()
+    fun calculateEdgeFence(): Long = areas.count() * edgesWithoutNeighbour()
+
+    fun calculateCornerFence(): Long = areas.count() * cornerWithoutNeighbour()
 
     private fun edgesWithoutNeighbour(): Long {
         var fence = 0L
@@ -49,9 +56,41 @@ private data class Garden(val type: Char, val areas: MutableSet<Area>) {
         }
         return fence
     }
+
+    private fun cornerWithoutNeighbour(): Long {
+        var fence = 0L
+        for (area in areas) {
+            if (area.right() !in areas && area.up() !in areas) {
+                fence++
+            }
+            if (area.right() !in areas && area.down() !in areas) {
+                fence++
+            }
+            if (area.left() !in areas && area.down() !in areas) {
+                fence++
+            }
+            if (area.left() !in areas && area.up() !in areas) {
+                fence++
+            }
+
+            if (area.right() in areas && area.up() in areas && area.right().up() !in areas) {
+                fence++
+            }
+            if (area.right() in areas && area.down() in areas && area.right().down() !in areas) {
+                fence++
+            }
+            if (area.left() in areas && area.down() in areas && area.left().down() !in areas) {
+                fence++
+            }
+            if (area.left() in areas && area.up() in areas && area.left().up() !in areas) {
+                fence++
+            }
+        }
+        return fence
+    }
 }
 
-private fun List<List<Area>>.solve(): Long {
+private fun List<List<Area>>.gardens(): Set<Garden> {
     val foundAreas = mutableSetOf<Area>()
     val gardens = mutableSetOf<Garden>()
     for (row in this) {
@@ -64,7 +103,7 @@ private fun List<List<Area>>.solve(): Long {
             }
         }
     }
-    return gardens.sumOf { it.calculateFence() }
+    return gardens
 }
 
 private fun List<List<Area>>.findAllNeighbours(area: Area, garden: Garden) {
