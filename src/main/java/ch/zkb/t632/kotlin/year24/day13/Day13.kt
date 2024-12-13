@@ -1,9 +1,8 @@
 package ch.zkb.t632.kotlin.year24.day13
 
+import kotlin.math.min
 import ch.zkb.t632.kotlin.check
 import ch.zkb.t632.kotlin.readInput
-import java.awt.Point
-import kotlin.math.min
 
 fun main() {
     val testInput = readInput("2024", "Day13_test")
@@ -18,24 +17,19 @@ fun main() {
 private fun part1(input: List<String>): Long = input.parseInputs().solve().sumOf { it.cost }
 
 private fun List<ClawMachine>.solve(): List<Sol> {
-    var sol = mutableListOf<Sol>()
+    val sol = mutableListOf<Sol>()
     for (clawMachine in this) {
-        do {
-            val (aCount, aRest)= clawMachine.prizePos.divRest(clawMachine.aButton)
-            val (bCount, bRest) = (clawMachine.prizePos - aRest).divRest(clawMachine.bButton)
-            if (bRest == Pos(0L, 0L)) {
-                sol += Sol(aCount, bCount, aCount * 3 + bCount)
+        for (a in 1..100L) {
+            val sumA = clawMachine.aButton.mul(a)
+            val rest = clawMachine.prizePos - sumA
+            val (b, isDividable) = rest.div(clawMachine.bButton)
+            if (isDividable) {
+                sol += Sol(a, b, (a * 3L) + b)
+                break
             }
-        } while (false)
+        }
     }
-    println(sol)
     return sol
-}
-
-private fun gcd(a: Pos, b: Pos): Pos? {
-    if (b == Pos(0L, 0L)) return a
-    if (b.x <= 0 || b.y <= 0) return null
-    return gcd(b, a.divRest(b).second)
 }
 
 private data class ClawMachine(val prizePos: Pos, val aButton: Pos, val bButton: Pos)
@@ -43,13 +37,12 @@ private data class ClawMachine(val prizePos: Pos, val aButton: Pos, val bButton:
 
 private data class Pos(val x: Long, val y: Long) {
     operator fun plus(other: Pos): Pos = Pos(x + other.x, y + other.y)
-    operator fun minus(other: Pos): Pos = Pos(x - other.x, y - other.y)
     fun mul(other: Long): Pos = Pos(x * other, y * other)
-    fun divRest(other: Pos): Pair<Long, Pos> {
+    operator fun minus(other: Pos): Pos = Pos(x - other.x, y - other.y)
+    fun div(other: Pos): Pair<Long, Boolean> {
         val resx = x / other.x
         val resy = y / other.y
-        val ret = min(resx, resy)
-        return ret to minus(other.mul(ret))
+        return resx to (resx == resy && Pos(other.x * resx, other.y * resy) == this)
     }
 }
 
@@ -63,7 +56,7 @@ private fun List<String>.parseInputs(): List<ClawMachine> {
             val rowA = input[y - 3]
             val rowB = input[y - 2]
             val prize = input[y - 1]
-            // add(ClawMachine(prize.parse() + Pos(10000000000000L, 10000000000000), rowA.parse(), rowB.parse()))
+            //add(ClawMachine(prize.parse() + Pos(10000000000000L, 10000000000000), rowA.parse(), rowB.parse()))
             add(ClawMachine(prize.parse(), rowA.parse(), rowB.parse()))
             y += 4
         }
