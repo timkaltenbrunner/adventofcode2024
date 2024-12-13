@@ -20,17 +20,22 @@ private fun part1(input: List<String>): Long = input.parseInputs().solve().sumOf
 private fun List<ClawMachine>.solve(): List<Sol> {
     var sol = mutableListOf<Sol>()
     for (clawMachine in this) {
-        var aCount = 0L
         do {
-            val result = clawMachine.prizePos - clawMachine.aButton.mul(++aCount)
-            val (bCount, rest) = result.divRest(clawMachine.bButton)
-            if (rest == Pos(0L, 0L)) {
+            val (aCount, aRest)= clawMachine.prizePos.divRest(clawMachine.aButton)
+            val (bCount, bRest) = (clawMachine.prizePos - aRest).divRest(clawMachine.bButton)
+            if (bRest == Pos(0L, 0L)) {
                 sol += Sol(aCount, bCount, aCount * 3 + bCount)
             }
-        } while (result.x > 0 && result.y > 0)
+        } while (false)
     }
     println(sol)
     return sol
+}
+
+private fun gcd(a: Pos, b: Pos): Pos? {
+    if (b == Pos(0L, 0L)) return a
+    if (b.x <= 0 || b.y <= 0) return null
+    return gcd(b, a.divRest(b).second)
 }
 
 private data class ClawMachine(val prizePos: Pos, val aButton: Pos, val bButton: Pos)
@@ -46,13 +51,6 @@ private data class Pos(val x: Long, val y: Long) {
         val ret = min(resx, resy)
         return ret to minus(other.mul(ret))
     }
-}
-
-
-/** Greatest common divisor */
-fun gcd(a: Long, b: Long): Long {
-    if (b == 0L) return a
-    return gcd(b, a % b)
 }
 
 private data class Sol(val a: Long, val b: Long, var cost: Long)
