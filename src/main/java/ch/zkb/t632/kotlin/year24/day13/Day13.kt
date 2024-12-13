@@ -19,7 +19,7 @@ private fun part1(input: List<String>): Long = input.parseInputs().solve().sumOf
 private fun List<ClawMachine>.solve(): List<Sol> {
     val sol = mutableListOf<Sol>()
     for (clawMachine in this) {
-        for (a in 1..100L) {
+        for (a in 1..10000L) {
             val sumA = clawMachine.aButton.mul(a)
             val rest = clawMachine.prizePos - sumA
             val (b, isDividable) = rest.div(clawMachine.bButton)
@@ -40,9 +40,8 @@ private data class Pos(val x: Long, val y: Long) {
     fun mul(other: Long): Pos = Pos(x * other, y * other)
     operator fun minus(other: Pos): Pos = Pos(x - other.x, y - other.y)
     fun div(other: Pos): Pair<Long, Boolean> {
-        val resx = x / other.x
-        val resy = y / other.y
-        return resx to (resx == resy && Pos(other.x * resx, other.y * resy) == this)
+        val multiplier = x / other.x
+        return multiplier to (Pos(other.x * multiplier, other.y * multiplier) == this)
     }
 }
 
@@ -56,8 +55,8 @@ private fun List<String>.parseInputs(): List<ClawMachine> {
             val rowA = input[y - 3]
             val rowB = input[y - 2]
             val prize = input[y - 1]
-            //add(ClawMachine(prize.parse() + Pos(10000000000000L, 10000000000000), rowA.parse(), rowB.parse()))
-            add(ClawMachine(prize.parse(), rowA.parse(), rowB.parse()))
+            add(ClawMachine(prize.parse() + Pos(10000000000000, 10000000000000), rowA.parse(), rowB.parse()))
+            //add(ClawMachine(prize.parse(), rowA.parse(), rowB.parse()))
             y += 4
         }
     }
