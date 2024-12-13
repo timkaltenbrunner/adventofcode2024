@@ -1,32 +1,37 @@
 package ch.zkb.t632.kotlin.year24.day13
 
-import kotlin.math.min
 import ch.zkb.t632.kotlin.check
 import ch.zkb.t632.kotlin.readInput
 
 fun main() {
     val testInput = readInput("2024", "Day13_test")
-    check(part1(testInput), 480)
+    check(solve(testInput), 480)
 
     val input = readInput("2024", "Day13")
-    val resultPart1 = part1(input)
+    val resultPart1 = solve(input)
+
     println("Solution of Part1: $resultPart1")
+
+    val resultPart2 = solve(input, Pos(10000000000000, 10000000000000))
+    println("Solution of Part2: $resultPart2")
 
 }
 
-private fun part1(input: List<String>): Long = input.parseInputs().solve().sumOf { it.cost }
+private fun solve(input: List<String>, addPos: Pos = Pos(0L, 0L)): Long = input.parseInputs(addPos).solve().sumOf { it.cost }
 
 private fun List<ClawMachine>.solve(): List<Sol> {
     val sol = mutableListOf<Sol>()
     for (clawMachine in this) {
-        for (a in 1..10000L) {
-            val sumA = clawMachine.aButton.mul(a)
-            val rest = clawMachine.prizePos - sumA
-            val (b, isDividable) = rest.div(clawMachine.bButton)
-            if (isDividable) {
-                sol += Sol(a, b, (a * 3L) + b)
-                break
-            }
+        val a1 = clawMachine.aButton.x
+        val a2 = clawMachine.aButton.y
+        val b1 = clawMachine.bButton.x
+        val b2 = clawMachine.bButton.y
+        val z1 = clawMachine.prizePos.x
+        val z2 = clawMachine.prizePos.y
+        val factorB = (a2 * z1 - a1 * z2) / (a2 * b1 - a1 * b2)
+        val factorA = (z1 - b1 * factorB) / a1
+        if (clawMachine.aButton.mul(factorA) + clawMachine.bButton.mul(factorB) == clawMachine.prizePos) {
+            sol += Sol(factorA, factorB, factorA * 3 + factorB)
         }
     }
     return sol
@@ -47,7 +52,7 @@ private data class Pos(val x: Long, val y: Long) {
 
 private data class Sol(val a: Long, val b: Long, var cost: Long)
 
-private fun List<String>.parseInputs(): List<ClawMachine> {
+private fun List<String>.parseInputs(addPos: Pos): List<ClawMachine> {
     val input = this
     return buildList {
         var y = 3
@@ -55,7 +60,7 @@ private fun List<String>.parseInputs(): List<ClawMachine> {
             val rowA = input[y - 3]
             val rowB = input[y - 2]
             val prize = input[y - 1]
-            add(ClawMachine(prize.parse() + Pos(10000000000000, 10000000000000), rowA.parse(), rowB.parse()))
+            add(ClawMachine(prize.parse() + addPos, rowA.parse(), rowB.parse()))
             //add(ClawMachine(prize.parse(), rowA.parse(), rowB.parse()))
             y += 4
         }
