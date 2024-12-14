@@ -6,33 +6,37 @@ import ch.zkb.t632.kotlin.readInput
 fun main() {
     val testInput = readInput("2024", "Day14_test")
     val testBoadSize = Pos(11, 7)
-    val waitTime = 1L
-    // check(solve(testInput, testBoadSize, waitTime), 12)
+    val waitTime = 100L
+    check(solve(testInput, testBoadSize, waitTime, false), 12)
 
     val input = readInput("2024", "Day14")
     val boadSize = Pos(101, 103)
-    val resultPart1 = solve(input, boadSize, waitTime)
+    val resultPart1 = solve(input, boadSize, waitTime, false)
 
     println("Solution of Part1: $resultPart1")
 
+    solve(input, boadSize, 1, true)
+
 }
 
-private fun solve(input: List<String>, boardSize: Pos, seconds: Long): Long =
-    input.parseInputs().solve(boardSize, seconds).mulSquares(boardSize)
+private fun solve(input: List<String>, boardSize: Pos, seconds: Long, checkForTree: Boolean): Long =
+    input.parseInputs().solve(boardSize, seconds, checkForTree).mulSquares(boardSize)
 
 
-private fun List<Robot>.solve(boardSize: Pos, seconds: Long): List<Robot> {
+private fun List<Robot>.solve(boardSize: Pos, seconds: Long, checkForTree: Boolean): List<Robot> {
     var count = 0
-    while (!containsTree()) {
+    do {
         count++
         for (robot in this) {
             robot.walk(boardSize, seconds)
         }
-
+    } while (checkForTree && !containsTree())
+    if (checkForTree) {
+        println()
+        println("Solution part2: $count")
+        println()
+        print(boardSize)
     }
-    println()
-    println("Count: $count")
-    print(boardSize)
     return this
 }
 
@@ -51,7 +55,6 @@ private fun List<Robot>.containsTree(): Boolean {
             }
         }
         if (found) {
-            println("Pos: $pos")
             return true
         }
     }
