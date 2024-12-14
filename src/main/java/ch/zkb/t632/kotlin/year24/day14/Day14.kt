@@ -37,17 +37,19 @@ private fun List<Robot>.mulSquares(boardSize: Pos): Long {
     var rightUp = 0L
     var leftDown = 0L
     var rightDown = 0L
+    val xMiddleLine = boardSize.x / 2
+    val yMiddleLine = boardSize.y / 2
     for (robot in this) {
-        if (robot.pos.x < boardSize.x / 2) {
-            if (robot.pos.y < boardSize.y / 2) {
+        if (robot.pos.x < xMiddleLine) {
+            if (robot.pos.y < yMiddleLine) {
                 leftUp++
-            } else if (robot.pos.y > boardSize.y / 2) {
+            } else if (robot.pos.y > yMiddleLine) {
                 rightUp++
             }
-        } else if (robot.pos.x > boardSize.x / 2) {
-            if (robot.pos.y < boardSize.y / 2) {
+        } else if (robot.pos.x > xMiddleLine) {
+            if (robot.pos.y < yMiddleLine) {
                 leftDown++
-            } else if (robot.pos.y > boardSize.y / 2) {
+            } else if (robot.pos.y > yMiddleLine) {
                 rightDown++
             }
 
