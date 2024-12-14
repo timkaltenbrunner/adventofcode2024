@@ -6,17 +6,14 @@ import ch.zkb.t632.kotlin.readInput
 fun main() {
     val testInput = readInput("2024", "Day14_test")
     val testBoadSize = Pos(11, 7)
-    val waitTime = 100L
-    check(solve(testInput, testBoadSize, waitTime), 12)
+    val waitTime = 1L
+    // check(solve(testInput, testBoadSize, waitTime), 12)
 
     val input = readInput("2024", "Day14")
     val boadSize = Pos(101, 103)
     val resultPart1 = solve(input, boadSize, waitTime)
 
     println("Solution of Part1: $resultPart1")
-
-    val resultPart2 = solve(input, boadSize, waitTime)
-    println("Solution of Part2: $resultPart2")
 
 }
 
@@ -25,11 +22,42 @@ private fun solve(input: List<String>, boardSize: Pos, seconds: Long): Long =
 
 
 private fun List<Robot>.solve(boardSize: Pos, seconds: Long): List<Robot> {
-    for (robot in this) {
-        robot.walk(boardSize, seconds)
+    var count = 0
+    while (!containsTree()) {
+        count++
+        for (robot in this) {
+            robot.walk(boardSize, seconds)
+        }
+
     }
+    println()
+    println("Count: $count")
+    print(boardSize)
     return this
 }
+
+private fun List<Robot>.containsTree(): Boolean {
+    val poss = this.map { it.pos }.toSet()
+    for (pos in poss) {
+        var left = pos
+        var right = pos
+        var found = true
+        for (level in 0..4) {
+            left = Pos(left.x + 1, left.y - 1)
+            right = Pos(right.x + 1, right.y + 1)
+            if (left !in poss || right !in poss) {
+                found = false
+                continue
+            }
+        }
+        if (found) {
+            println("Pos: $pos")
+            return true
+        }
+    }
+    return false
+}
+
 
 private fun List<Robot>.mulSquares(boardSize: Pos): Long {
     //print(boardSize)
@@ -63,8 +91,14 @@ private fun List<Robot>.print(boardSize: Pos) {
     for (y in 0..<boardSize.y) {
         println()
         for (x in 0..<boardSize.x) {
+            val robots = this.filter { it.pos == Pos(x, y) }
+            if (robots.isNotEmpty()) {
+                print(robots.count())
+            } else {
+                print(" ")
+            }
 
-            print(this.filter { it.pos == Pos(x, y) }.count())
+
         }
 
     }
