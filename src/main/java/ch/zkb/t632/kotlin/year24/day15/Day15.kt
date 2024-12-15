@@ -23,7 +23,9 @@ private data class Pos(val x: Int, val y: Int) {
     operator fun plus(other: Pos): Pos = Pos(x + other.x, y + other.y)
 }
 
-private data class Box(val start: Pos, val end: Pos)
+private data class Box(val start: Pos, val end: Pos) {
+    operator fun plus(other: Pos) = Box(start + other, end + other)
+}
 
 private data class Map(var robot: Pos, val boxes: MutableSet<Box>, val walls: Set<Pos>)
 
@@ -39,7 +41,7 @@ private data class Warehouse(val map: Map, val movements: List<Pos>) {
     fun move(movement: Pos) {
         val nextPos = map.robot + movement
         if (!map.walls.contains(nextPos)) {
-            val box = map.boxes.findBox(nextPos)
+            val box = map.boxes.findBoxAtPos(nextPos)
             if (box == null) {
                 map.robot += movement
             } else {
@@ -56,12 +58,10 @@ private data class Warehouse(val map: Map, val movements: List<Pos>) {
 
     private fun findBoxes(box: Box, movement: Pos, boxes: MutableSet<Box>): Boolean {
         boxes += box
-        val nextStart = box.start + movement
-        val nextEnd = box.end + movement
-        if (map.walls.contains(nextStart)) return false
-        if (map.walls.contains(nextEnd)) return false
-        val nextStartBox = map.boxes.findBox(nextStart)
-        val nextEndBox = map.boxes.findBox(nextEnd)
+        val nextBox = box + movement
+        if (map.walls.collides(nextBox)) return false
+        val nextStartBox = map.boxes.findBoxAtPos(nextBox.start)
+        val nextEndBox = map.boxes.findBoxAtPos(nextBox.end)
         var canMove = true
         if (nextStartBox != null && !boxes.contains(nextStartBox)) {
             canMove = canMove && findBoxes(nextStartBox, movement, boxes)
@@ -73,7 +73,9 @@ private data class Warehouse(val map: Map, val movements: List<Pos>) {
     }
 }
 
-private fun Set<Box>.findBox(pos: Pos): Box? = find { box -> box.start == pos || box.end == pos }
+private fun Set<Pos>.collides(nextBox: Box): Boolean = contains(nextBox.start) || contains(nextBox.end)
+
+private fun Set<Box>.findBoxAtPos(pos: Pos): Box? = find { box -> box.start == pos || box.end == pos }
 
 private fun List<String>.parseInputs(scaleX: Boolean): Warehouse {
     var robot = Pos(0, 0)
