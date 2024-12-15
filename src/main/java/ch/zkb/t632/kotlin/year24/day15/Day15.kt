@@ -5,7 +5,7 @@ import ch.zkb.t632.kotlin.readInput
 
 fun main() {
     val testInput = readInput("2024", "Day15_test")
-    check(solve(testInput), 480)
+    check(solve(testInput), 10092)
 
     val input = readInput("2024", "Day15")
     val resultPart1 = solve(input)
@@ -14,59 +14,84 @@ fun main() {
 
 }
 
-private fun solve(input: List<String>): Long = input.parseInputs().solve().sumOf { it.cost }
+private fun solve(input: List<String>): Long = input.parseInputs().solve()
 
-private fun List<ClawMachine>.solve(): List<Sol> {
-    val sol = mutableListOf<Sol>()
-    for (clawMachine in this) {
-        val a1 = clawMachine.aButton.x
-        val a2 = clawMachine.aButton.y
-        val b1 = clawMachine.bButton.x
-        val b2 = clawMachine.bButton.y
-        val z1 = clawMachine.prizePos.x
-        val z2 = clawMachine.prizePos.y
-        val factorB = (a2 * z1 - a1 * z2) / (a2 * b1 - a1 * b2)
-        val factorA = (z1 - b1 * factorB) / a1
-        if (clawMachine.aButton.mul(factorA) + clawMachine.bButton.mul(factorB) == clawMachine.prizePos) {
-            sol += Sol(factorA, factorB, factorA * 3 + factorB)
+
+private data class Warehouse(val map: Map, val movements: List<Pos>) {
+    fun canMove(movement: Pos): Boolean {
+        var pos = map.robot
+        do {
+            pos = pos + movement
+            if (map.walls.contains(pos)) {
+                return false
+            }
+        } while (map.boxes.contains(pos))
+        return true
+    }
+
+    fun move(movement: Pos) {
+        map.robot += movement
+        shiftBoxes(map.robot, movement)
+    }
+
+    private fun shiftBoxes(pos: Pos, movement: Pos) {
+        if (pos in map.boxes) {
+            var next = pos
+            while (next in map.boxes) {
+                next += movement
+            }
+            map.boxes.remove(pos)
+            map.boxes.add(next)
         }
     }
-    return sol
 }
 
-private data class ClawMachine(val prizePos: Pos, val aButton: Pos, val bButton: Pos)
+private data class Map(var robot: Pos, val boxes: MutableSet<Pos>, val walls: Set<Pos>, val maxX: Int, val maxY: Int)
 
-
-private data class Pos(val x: Long, val y: Long) {
+private data class Pos(val x: Int, val y: Int) {
     operator fun plus(other: Pos): Pos = Pos(x + other.x, y + other.y)
-    fun mul(other: Long): Pos = Pos(x * other, y * other)
-    operator fun minus(other: Pos): Pos = Pos(x - other.x, y - other.y)
-    fun div(other: Pos): Pair<Long, Boolean> {
-        val multiplier = x / other.x
-        return multiplier to (Pos(other.x * multiplier, other.y * multiplier) == this)
-    }
 }
 
-private data class Sol(val a: Long, val b: Long, var cost: Long)
-
-private fun List<String>.parseInputs(): List<ClawMachine> {
-    val input = this
-    return buildList {
-        var y = 3
-        while (y - 1 in input.indices) {
-            val rowA = input[y - 3]
-            val rowB = input[y - 2]
-            val prize = input[y - 1]
-            add(ClawMachine(prize.parse(), rowA.parse(), rowB.parse()))
-            y += 4
+private fun Warehouse.solve(): Long {
+    for (movement in movements) {
+        if (canMove(movement)) {
+            move(movement)
         }
     }
+    return map.boxes.sumOf { (x, y) -> 100L * y + x }
 }
 
-private fun String.parse(): Pos {
-    val reg = """[^\d]*(\d+), Y[\\+|=](\d+)""".toRegex()
-    val matchResult = reg.matchEntire(this)
-    return Pos(matchResult!!.groupValues[1].toLong(), matchResult.groupValues[2].toLong())
+
+private fun List<String>.parseInputs(): Warehouse {
+    var robot = Pos(0, 0)
+    val boxes: MutableSet<Pos> = mutableSetOf()
+    val walls: MutableSet<Pos> = mutableSetOf()
+    val movements: MutableList<Pos> = mutableListOf()
+    var maxX = 0
+    var maxY = 0
+    val input = this
+    for ((y, row) in input.withIndex()) {
+        for ((x, ch) in row.withIndex()) {
+            when (ch) {
+                '#' -> {
+                    maxX = kotlin.math.max(maxX, x)
+                    maxY = kotlin.math.max(maxY, y)
+                    walls.add(Pos(x, y))
+                }
+
+                'O' -> boxes.add(Pos(x, y))
+                '>' -> movements.add(Pos(1, 0))
+                '<' -> movements.add(Pos(-1, 0))
+                '^' -> movements.add(Pos(0, -1))
+                'v' -> movements.add(Pos(0, 1))
+                '@' -> robot = Pos(x, y)
+            }
+        }
+    }
+    return Warehouse(Map(robot, boxes, walls, maxX, maxY), movements)
 }
+
+
+
 
 
