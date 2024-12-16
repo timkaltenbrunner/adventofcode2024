@@ -13,7 +13,7 @@ fun main() {
     println("Solution of Part1: ${part1(input)}")
 
     check(part2(testInput), 64)
-    println("Solution of Part1: ${part2(input)}")
+    println("Solution of Part2: ${part2(input)}")
 }
 
 private fun part1(input: List<String>): Int = input.parseInputs().solveWithHeuristic()?.cost ?: -1
