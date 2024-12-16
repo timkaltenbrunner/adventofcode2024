@@ -11,9 +11,16 @@ fun main() {
     val input = readInput("2024", "Day16")
     val resultPart1 = part1(input)
     println("Solution of Part1: $resultPart1")
+
+    check(part2(testInput, 11048), 64)
+
+    val resultPart2 = part2(input, resultPart1)
+    println("Solution of Part2: $resultPart2")
 }
 
 private fun part1(input: List<String>): Int = input.parseInputs().solve()
+
+private fun part2(input: List<String>, optimalCost: Int): Int = input.parseInputs().solve2(optimalCost)
 
 private fun Map.solve(): Int {
     val node = aStar(
@@ -26,6 +33,15 @@ private fun Map.solve(): Int {
         return -1
     }
     return node.cost
+}
+
+private fun Map.solve2(optimalCost: Int): Int {
+    val paths = findAllOptimalPaths(optimalCost)
+    val uniquePos = mutableSetOf<Pos>()
+    for (path in paths) {
+        uniquePos += path.map { it.pos }
+    }
+    return uniquePos.count()
 }
 
 private data class Pos(val x: Int, val y: Int) {
@@ -57,6 +73,31 @@ private data class Map(var start: PosDir, var end: Pos, val walls: Set<Pos>) {
         return steps
     }
 
+    fun findAllOptimalPaths(
+        optimalCost: Int,
+        current: PosDir = start,
+        cost: Int = 0,
+        path: MutableMap<PosDir, Int> = mutableMapOf(current to cost)
+    ): Set<Set<PosDir>> {
+        val neighbours = neighboursWithCost(current)
+        val ret = mutableSetOf<Set<PosDir>>()
+        for ((nextPos, costToMove) in neighbours) {
+            val newCost = cost + costToMove
+            if (newCost <= optimalCost) {
+                if (nextPos.pos == end && optimalCost == newCost) {
+                    path[nextPos] = newCost
+                    return setOf(path.keys.toSet())
+                }
+            }
+            if (path[nextPos] == null) {
+                val newPath = path.toMutableMap()
+                newPath[nextPos] = newCost
+                ret += findAllOptimalPaths(optimalCost, nextPos, newCost, newPath)
+            }
+
+        }
+        return ret
+    }
 }
 
 private enum class Direction() {
