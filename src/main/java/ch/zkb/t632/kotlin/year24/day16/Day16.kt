@@ -2,46 +2,30 @@ package ch.zkb.t632.kotlin.year24.day16
 
 import ch.zkb.t632.kotlin.check
 import ch.zkb.t632.kotlin.readInput
+import java.util.*
 import kotlin.math.abs
 
 fun main() {
     val testInput = readInput("2024", "Day16_test")
-    check(part1(testInput), 11048)
+    check(part1(testInput), 64)
 
     val input = readInput("2024", "Day16")
     val resultPart1 = part1(input)
     println("Solution of Part1: $resultPart1")
-
-    check(part2(testInput, 11048), 64)
-
-    val resultPart2 = part2(input, resultPart1)
-    println("Solution of Part2: $resultPart2")
 }
 
 private fun part1(input: List<String>): Int = input.parseInputs().solve()
-
-private fun part2(input: List<String>, optimalCost: Int): Int = input.parseInputs().solve2(optimalCost)
 
 private fun Map.solve(): Int {
     val node = aStar(
         from = start,
         goal = ::isEnd,
-        neighboursWithCost = ::neighboursWithCost,
-        heuristic = ::heuristic
+        neighboursWithCost = ::neighboursWithCost
     )
-    if (node == null) {
-        return -1
+    if (node != null) {
+        return node.path().count()
     }
-    return node.cost
-}
-
-private fun Map.solve2(optimalCost: Int): Int {
-    val paths = findAllOptimalPaths(optimalCost)
-    val uniquePos = mutableSetOf<Pos>()
-    for (path in paths) {
-        uniquePos += path.map { it.pos }
-    }
-    return uniquePos.count()
+    return -1
 }
 
 private data class Pos(val x: Int, val y: Int) {
@@ -52,8 +36,8 @@ private data class PosDir(val pos: Pos, val direction: Direction) {
     fun rotationCosts(end: Pos): Int = when (direction) {
         Direction.UP -> if (pos.y < end.y) 2000 else if (pos.x != end.x) 1000 else 0
         Direction.DOWN -> if (pos.y > end.y) 2000 else if (pos.x != end.x) 1000 else 0
-        Direction.RIGHT -> if (pos.x > end.x) 2000 else if (pos.y != end.y) 1000 else 0
-        Direction.LEFT -> if (pos.x < end.x) 2000 else if (pos.y != end.y) 1000 else 0
+        Direction.RIGHPosDir -> if (pos.x > end.x) 2000 else if (pos.y != end.y) 1000 else 0
+        Direction.LEFPosDir -> if (pos.x < end.x) 2000 else if (pos.y != end.y) 1000 else 0
     }
 }
 
@@ -73,62 +57,83 @@ private data class Map(var start: PosDir, var end: Pos, val walls: Set<Pos>) {
         return steps
     }
 
-    fun findAllOptimalPaths(
-        optimalCost: Int,
-        current: PosDir = start,
-        cost: Int = 0,
-        path: MutableMap<PosDir, Int> = mutableMapOf(current to cost)
-    ): Set<Set<PosDir>> {
-        val neighbours = neighboursWithCost(current)
-        val ret = mutableSetOf<Set<PosDir>>()
-        for ((nextPos, costToMove) in neighbours) {
-            val newCost = cost + costToMove
-            if (newCost <= optimalCost) {
-                if (nextPos.pos == end && optimalCost == newCost) {
-                    path[nextPos] = newCost
-                    return setOf(path.keys.toSet())
-                }
-            }
-            if (path[nextPos] == null) {
-                val newPath = path.toMutableMap()
-                newPath[nextPos] = newCost
-                ret += findAllOptimalPaths(optimalCost, nextPos, newCost, newPath)
-            }
-
-        }
-        return ret
-    }
 }
 
 private enum class Direction() {
     UP,
     DOWN,
-    LEFT,
-    RIGHT;
+    LEFPosDir,
+    RIGHPosDir;
 
     fun neighbourSteps(): Set<PosDir> = when (this) {
-        UP -> setOf(PosDir(Pos(-1, 0), LEFT), PosDir(Pos(1, 0), RIGHT), PosDir(Pos(0, -1), UP))
-        DOWN -> setOf(PosDir(Pos(-1, 0), LEFT), PosDir(Pos(1, 0), RIGHT), PosDir(Pos(0, 1), DOWN))
-        RIGHT -> setOf(PosDir(Pos(0, -1), UP), PosDir(Pos(0, 1), DOWN), PosDir(Pos(1, 0), RIGHT))
-        LEFT -> setOf(PosDir(Pos(0, -1), UP), PosDir(Pos(0, 1), DOWN), PosDir(Pos(-1, 0), LEFT))
+        UP -> setOf(PosDir(Pos(-1, 0), LEFPosDir), PosDir(Pos(1, 0), RIGHPosDir), PosDir(Pos(0, -1), UP))
+        DOWN -> setOf(PosDir(Pos(-1, 0), LEFPosDir), PosDir(Pos(1, 0), RIGHPosDir), PosDir(Pos(0, 1), DOWN))
+        RIGHPosDir -> setOf(PosDir(Pos(0, -1), UP), PosDir(Pos(0, 1), DOWN), PosDir(Pos(1, 0), RIGHPosDir))
+        LEFPosDir -> setOf(PosDir(Pos(0, -1), UP), PosDir(Pos(0, 1), DOWN), PosDir(Pos(-1, 0), LEFPosDir))
     }
 }
 
 
 private fun List<String>.parseInputs(): Map {
-    var start = PosDir(Pos(0, 0), Direction.RIGHT)
+    var start = PosDir(Pos(0, 0), Direction.RIGHPosDir)
     var end = Pos(0, 0)
     val walls = mutableSetOf<Pos>()
     for ((y, row) in withIndex()) {
         for ((x, ch) in row.withIndex()) {
             when (ch) {
-                'S' -> start = PosDir(Pos(x, y), Direction.RIGHT)
+                'S' -> start = PosDir(Pos(x, y), Direction.RIGHPosDir)
                 'E' -> end = Pos(x, y)
                 '#' -> walls.add(Pos(x, y))
             }
         }
     }
     return Map(start, end, walls)
+}
+
+private data class Node(
+    val parents: MutableList<Node>,
+    val value: PosDir,
+    val cost: Int,
+    val heuristic: Int,
+) {
+    fun path(): Set<Pos> {
+        return buildSet {
+            add(value.pos)
+            for (parent in parents) {
+                addAll(parent.path())
+            }
+        }
+    }
+}
+
+private fun aStar(
+    from: PosDir,
+    goal: (PosDir) -> Boolean,
+    neighboursWithCost: PosDir.() -> Set<Pair<PosDir, Int>>,
+    heuristic: (PosDir) -> Int = { 0 },
+): Node? {
+    val visited = mutableMapOf<Pos, Node>()
+    val queue = PriorityQueue(compareBy<Node> { it.cost + it.heuristic })
+    queue += Node(mutableListOf(), from, 0, heuristic(from))
+    var found: Node? = null
+    while (queue.isNotEmpty()) {
+        val current = queue.poll()
+        if (goal(current.value)) found = current else {
+            for ((next, cost) in current.value.neighboursWithCost()) {
+                val otherPath = visited[next.pos]
+                if (otherPath != null) {
+                    if (otherPath.cost <= current.cost) {
+                        current.parents += otherPath
+                    }
+                } else {
+                    val node = Node(mutableListOf(current), next, current.cost + cost, heuristic(next))
+                    visited[next.pos] = node
+                    queue += node
+                }
+            }
+        }
+    }
+    return found
 }
 
 
