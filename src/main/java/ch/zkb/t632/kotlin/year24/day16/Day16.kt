@@ -7,26 +7,29 @@ import kotlin.math.abs
 
 fun main() {
     val testInput = readInput("2024", "Day16_test")
-    check(part1(testInput), 64)
+    check(part1(testInput), 11048)
 
     val input = readInput("2024", "Day16")
-    val resultPart1 = part1(input)
-    println("Solution of Part1: $resultPart1")
+    println("Solution of Part1: ${part1(input)}")
+
+    check(part2(testInput), 64)
+    println("Solution of Part1: ${part2(input)}")
 }
 
-private fun part1(input: List<String>): Int = input.parseInputs().solve()
+private fun part1(input: List<String>): Int = input.parseInputs().solveWithHeuristic()?.cost ?: -1
 
-private fun Map.solve(): Int {
-    val node = aStar(
-        from = start,
-        goal = ::isEnd,
-        neighboursWithCost = ::neighboursWithCost
-    )
-    if (node != null) {
-        return node.path().count()
-    }
-    return -1
-}
+private fun part2(input: List<String>): Int = input.parseInputs().solveWithoutHeuristic()?.path()?.count() ?: -1
+
+private fun Map.solveWithHeuristic(): Node? = aStar(
+    from = start,
+    goal = ::isEnd,
+    neighboursWithCost = ::neighboursWithCost,
+    heuristic = ::heuristic)
+
+private fun Map.solveWithoutHeuristic(): Node? = aStar(
+    from = start,
+    goal = ::isEnd,
+    neighboursWithCost = ::neighboursWithCost)
 
 private data class Pos(val x: Int, val y: Int) {
     operator fun plus(other: Pos): Pos = Pos(x + other.x, y + other.y)
@@ -92,13 +95,13 @@ private fun List<String>.parseInputs(): Map {
 
 private data class Node(
     val parents: MutableList<Node>,
-    val value: PosDir,
+    val posDir: PosDir,
     val cost: Int,
     val heuristic: Int,
 ) {
     fun path(): Set<Pos> {
         return buildSet {
-            add(value.pos)
+            add(posDir.pos)
             for (parent in parents) {
                 addAll(parent.path())
             }
@@ -112,28 +115,32 @@ private fun aStar(
     neighboursWithCost: PosDir.() -> Set<Pair<PosDir, Int>>,
     heuristic: (PosDir) -> Int = { 0 },
 ): Node? {
-    val visited = mutableMapOf<Pos, Node>()
+    val visited = mutableMapOf<PosDir, Node>()
     val queue = PriorityQueue(compareBy<Node> { it.cost + it.heuristic })
     queue += Node(mutableListOf(), from, 0, heuristic(from))
-    var found: Node? = null
     while (queue.isNotEmpty()) {
-        val current = queue.poll()
-        if (goal(current.value)) found = current else {
-            for ((next, cost) in current.value.neighboursWithCost()) {
-                val otherPath = visited[next.pos]
-                if (otherPath != null) {
-                    if (otherPath.cost <= current.cost) {
-                        current.parents += otherPath
-                    }
-                } else {
+        var current = queue.poll()
+        if (goal(current.posDir)) return current
+
+        val existingPath = visited[current.posDir]
+        var check = existingPath == null
+        if (existingPath != null && existingPath.cost <= current.cost && existingPath.parents != current.parents) {
+            existingPath.parents += current.parents
+            current = existingPath
+            check = true
+        }
+        if (check) {
+            visited[current.posDir] = current
+            for ((next, cost) in current.posDir.neighboursWithCost()) {
+                val otherPath = visited[next]
+                if (otherPath == null) {
                     val node = Node(mutableListOf(current), next, current.cost + cost, heuristic(next))
-                    visited[next.pos] = node
                     queue += node
                 }
             }
         }
     }
-    return found
+    return null
 }
 
 
