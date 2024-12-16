@@ -18,7 +18,8 @@ fun main() {
 
 private fun part1(input: List<String>): Int = input.parseInputs().solveWithHeuristic()?.cost ?: -1
 
-private fun part2(input: List<String>): Int = input.parseInputs().solveWithoutHeuristic()?.uniquePathPos()?.count() ?: -1
+private fun part2(input: List<String>): Int =
+    input.parseInputs().print(Map::solveWithoutHeuristic)?.uniquePathPos()?.count() ?: -1
 
 private fun Map.solveWithHeuristic(): Node? = aStarPath(
     from = start,
@@ -53,6 +54,24 @@ private data class Map(var start: PosDir, var end: Pos, val walls: Set<Pos>) {
         }
     }
 
+    fun print(fkt: Map.() -> Node?): Node? {
+        val ret = fkt(this)
+        if(ret != null) {
+            val unique = ret.uniquePathPos()
+            println()
+            for (y in 0..walls.maxBy { it.y }.y) {
+                println()
+                for (x in 0..walls.maxBy { it.x }.x) {
+                    val pos = Pos(x, y)
+                    if (pos in walls) print('#')
+                    else if (pos in unique) print('O')
+                    else print(' ')
+                }
+            }
+            println()
+        }
+        return ret;
+    }
 }
 
 private enum class Direction() {
