@@ -18,46 +18,39 @@ fun main() {
 
 private fun part1(input: List<String>): Int = input.parseInputs().solveWithHeuristic()?.cost ?: -1
 
-private fun part2(input: List<String>): Int = input.parseInputs().solveWithoutHeuristic()?.path()?.count() ?: -1
+private fun part2(input: List<String>): Int = input.parseInputs().solveWithoutHeuristic()?.uniquePathPos()?.count() ?: -1
 
-private fun Map.solveWithHeuristic(): Node? = aStar(
+private fun Map.solveWithHeuristic(): Node? = aStarPath(
     from = start,
     goal = ::isEnd,
     neighboursWithCost = ::neighboursWithCost,
-    heuristic = ::heuristic)
+    heuristic = ::heuristic
+)
 
-private fun Map.solveWithoutHeuristic(): Node? = aStar(
+private fun Map.solveWithoutHeuristic(): Node? = aStarPath(
     from = start,
     goal = ::isEnd,
-    neighboursWithCost = ::neighboursWithCost)
+    neighboursWithCost = ::neighboursWithCost
+)
 
 private data class Pos(val x: Int, val y: Int) {
     operator fun plus(other: Pos): Pos = Pos(x + other.x, y + other.y)
 }
 
-private data class PosDir(val pos: Pos, val direction: Direction) {
-    fun rotationCosts(end: Pos): Int = when (direction) {
-        Direction.UP -> if (pos.y < end.y) 2000 else if (pos.x != end.x) 1000 else 0
-        Direction.DOWN -> if (pos.y > end.y) 2000 else if (pos.x != end.x) 1000 else 0
-        Direction.RIGHPosDir -> if (pos.x > end.x) 2000 else if (pos.y != end.y) 1000 else 0
-        Direction.LEFPosDir -> if (pos.x < end.x) 2000 else if (pos.y != end.y) 1000 else 0
-    }
-}
+private data class PosDir(val pos: Pos, val direction: Direction)
 
 private data class Map(var start: PosDir, var end: Pos, val walls: Set<Pos>) {
     fun isEnd(posDir: PosDir): Boolean = posDir.pos == end
     fun heuristic(posDir: PosDir): Int =
-        abs(end.x - posDir.pos.x) + abs(end.y - posDir.pos.y) + posDir.rotationCosts(end)
+        abs(end.x - posDir.pos.x) + abs(end.y - posDir.pos.y)
 
-    fun neighboursWithCost(current: PosDir): Set<Pair<PosDir, Int>> {
-        val steps = mutableSetOf<Pair<PosDir, Int>>()
+    fun neighboursWithCost(current: PosDir): Set<Pair<PosDir, Int>> = buildSet<Pair<PosDir, Int>> {
         for (step in current.direction.neighbourSteps()) {
             val pos = current.pos + step.pos
             if (pos !in walls) {
-                steps += PosDir(pos, step.direction) to 1 + if (current.direction == step.direction) 0 else 1000
+                add(PosDir(pos, step.direction) to 1 + if (current.direction == step.direction) 0 else 1000)
             }
         }
-        return steps
     }
 
 }
@@ -65,26 +58,26 @@ private data class Map(var start: PosDir, var end: Pos, val walls: Set<Pos>) {
 private enum class Direction() {
     UP,
     DOWN,
-    LEFPosDir,
-    RIGHPosDir;
+    LEFT,
+    RIGHT;
 
     fun neighbourSteps(): Set<PosDir> = when (this) {
-        UP -> setOf(PosDir(Pos(-1, 0), LEFPosDir), PosDir(Pos(1, 0), RIGHPosDir), PosDir(Pos(0, -1), UP))
-        DOWN -> setOf(PosDir(Pos(-1, 0), LEFPosDir), PosDir(Pos(1, 0), RIGHPosDir), PosDir(Pos(0, 1), DOWN))
-        RIGHPosDir -> setOf(PosDir(Pos(0, -1), UP), PosDir(Pos(0, 1), DOWN), PosDir(Pos(1, 0), RIGHPosDir))
-        LEFPosDir -> setOf(PosDir(Pos(0, -1), UP), PosDir(Pos(0, 1), DOWN), PosDir(Pos(-1, 0), LEFPosDir))
+        UP -> setOf(PosDir(Pos(-1, 0), LEFT), PosDir(Pos(1, 0), RIGHT), PosDir(Pos(0, -1), UP))
+        DOWN -> setOf(PosDir(Pos(-1, 0), LEFT), PosDir(Pos(1, 0), RIGHT), PosDir(Pos(0, 1), DOWN))
+        RIGHT -> setOf(PosDir(Pos(0, -1), UP), PosDir(Pos(0, 1), DOWN), PosDir(Pos(1, 0), RIGHT))
+        LEFT -> setOf(PosDir(Pos(0, -1), UP), PosDir(Pos(0, 1), DOWN), PosDir(Pos(-1, 0), LEFT))
     }
 }
 
 
 private fun List<String>.parseInputs(): Map {
-    var start = PosDir(Pos(0, 0), Direction.RIGHPosDir)
+    var start = PosDir(Pos(0, 0), Direction.RIGHT)
     var end = Pos(0, 0)
     val walls = mutableSetOf<Pos>()
     for ((y, row) in withIndex()) {
         for ((x, ch) in row.withIndex()) {
             when (ch) {
-                'S' -> start = PosDir(Pos(x, y), Direction.RIGHPosDir)
+                'S' -> start = PosDir(Pos(x, y), Direction.RIGHT)
                 'E' -> end = Pos(x, y)
                 '#' -> walls.add(Pos(x, y))
             }
@@ -99,17 +92,17 @@ private data class Node(
     val cost: Int,
     val heuristic: Int,
 ) {
-    fun path(): Set<Pos> {
+    fun uniquePathPos(): Set<Pos> {
         return buildSet {
             add(posDir.pos)
             for (parent in parents) {
-                addAll(parent.path())
+                addAll(parent.uniquePathPos())
             }
         }
     }
 }
 
-private fun aStar(
+private fun aStarPath(
     from: PosDir,
     goal: (PosDir) -> Boolean,
     neighboursWithCost: PosDir.() -> Set<Pair<PosDir, Int>>,
@@ -132,8 +125,7 @@ private fun aStar(
         if (check) {
             visited[current.posDir] = current
             for ((next, cost) in current.posDir.neighboursWithCost()) {
-                val otherPath = visited[next]
-                if (otherPath == null) {
+                if (visited[next] == null) {
                     val node = Node(mutableListOf(current), next, current.cost + cost, heuristic(next))
                     queue += node
                 }
