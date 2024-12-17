@@ -1,5 +1,6 @@
 package ch.zkb.t632.kotlin.year24.day17
 
+import kotlin.math.min
 import ch.zkb.t632.kotlin.check
 import ch.zkb.t632.kotlin.readInput
 import kotlin.math.pow
@@ -28,24 +29,68 @@ fun main() {
     println("Solution of Part2: ${part2(input)}")
 }
 
-private fun part1(input: List<String>): String = input.parseInputs().solve().first
+private fun part1(input: List<String>): String = input.parseInputs().solve()
 
 private fun part2(input: List<String>): Long = input.parseInputs().solveb()
 
 private fun Computer.solveb(): Long {
     val sol = inst.flatMap { listOf(it.opcode, it.operand) }.toList()
-    var registerA = 100000000000000L
+    val solReversed = sol.joinToString(",").reversed()
+    var search = Long.MAX_VALUE / 2
+    var counter = 0
+    var registerA: Long
+    var minByBinary = Long.MAX_VALUE
     do {
-        val comp = this.copy(a = ++registerA)
-        if (registerA < 0) {
-            return -1
+        // registerA = counter++
+        registerA = search
+        val comp = this.copy(a = registerA)
+        val current = comp.solveHardcoded()
+        val currentRev = current.reversed()
+
+        if (isSmaller(currentRev, solReversed)) {
+            search += search / 32
+        } else {
+            search -= search / 32
         }
-    } while (!comp.solve(sol).second)
+        if (currentRev.take(18) == solReversed.take(18)) {
+            minByBinary = min(minByBinary, registerA)
+            println("Value $registerA Current: $currentRev")
+            println("Value $registerA Solutio: $solReversed")
+            println()
+            counter++
+        }
+    } while (currentRev != solReversed && counter < 10)
+    println("MinByBinary: " + minByBinary)
+    do {
+        registerA = minByBinary++
+        val comp = this.copy(a = registerA)
+        val current = comp.solveHardcoded()
+        val currentRev = current.reversed()
+        if (currentRev.take(20) == solReversed.take(20)) {
+            println("Value $registerA Current: $currentRev")
+            println("Value $registerA Solutio: $solReversed")
+            println()
+        }
+    } while (currentRev != solReversed)
+
     println("Found: $registerA")
     return registerA
 }
 
-private fun Computer.solve(code: List<Int>? = null): Pair<String, Boolean> {
+fun isSmaller(current: String, solution: String): Boolean {
+    if (current.length < solution.length) {
+        return true
+    } else if (current.length > solution.length) {
+        return false
+    }
+    for ((ind, cur) in current.withIndex()) {
+        if (cur == solution[ind]) continue
+        return cur > solution[ind]
+    }
+    return true
+}
+
+private fun Computer.solve(): String {
     var pointer = 0
     val output = mutableListOf<Int>()
     while (pointer in inst.indices) {
@@ -69,18 +114,6 @@ private fun Computer.solve(code: List<Int>? = null): Pair<String, Boolean> {
             //out
             5 -> {
                 output += cur.operand.combo(this).toInt() % 8
-                if (code != null) {
-                    for (index in output.indices) {
-                        if (code == output) {
-                            return "" to true
-                        }
-                        if (index !in code.indices || output[index] != code[index]) {
-                            return "" to false
-                        }
-                    }
-                    if (output.size > 9)
-                        println("Found partial: " + output.joinToString(","))
-                }
             }
             //bdv
             6 -> b = truncate(a / (2.0.pow(cur.operand.combo(this).toInt()))).toLong()
@@ -89,31 +122,7 @@ private fun Computer.solve(code: List<Int>? = null): Pair<String, Boolean> {
         }
         pointer++
     }
-    return output.joinToString(",") to (output == code)
-}
-
-private fun Computer.solveHardcoded(code: List<Int>): Pair<String, Boolean> {
-
-    val output = mutableListOf<Int>()
-    while (true) {
-        //2,4
-        b = a % 8
-        //1,1
-        b = b xor 1
-        // 7,5
-        c = truncate(a / (2.0.pow(b.toInt()))).toLong()
-        //0,3
-        a /= 8
-        // 4,3
-        b = b xor c
-        // 1,6
-        b = b xor 6
-        // 5,5,
-        output.add((b % 8).toInt())
-        // 3,0
-        if (a == 0L) break
-    }
-    return output.joinToString(",") to (output == code)
+    return output.joinToString(",")
 }
 
 private fun Int.combo(com: Computer): Long {
@@ -146,6 +155,33 @@ private fun List<String>.parseInputs(): Computer {
         }
     }
     return Computer(register[0], register[1], register[2], instructions)
+}
+
+
+private fun Computer.solveHardcoded(): String {
+
+    val output = mutableListOf<Int>()
+    while (true) {
+        //2,4 -> b = 0..7
+        b = a % 8L
+        //1,1 -> b= 1,3,5,7
+        b = b xor 1L
+        // 7,5
+        c = truncate(a / (2.0.pow(b.toInt()))).toLong()
+        // 4,3
+        b = b xor c
+        // 1,6
+        b = b xor 6L
+        // 5,5,
+        output.add((b % 8).toInt())
+        //if (output != code.take(output.size))
+        //    return "" to false
+        //0,3 -> Only Changing operation to a
+        a /= 8L
+        // 3,0
+        if (a == 0L) break
+    }
+    return output.joinToString(",")
 }
 
 
