@@ -34,7 +34,7 @@ private fun part2(input: List<String>): Int = input.parseInputs().solveb()
 
 private fun Computer.solveb(): Int {
     val sol = inst.flatMap { listOf(it.opcode, it.operand) }.toList()
-    var registerA = 0
+    var registerA = -1
     do {
         val comp = this.copy(a = ++registerA)
         if (registerA < 0) {
@@ -77,9 +77,9 @@ private fun Computer.solve(code: List<Int>? = null): Pair<String, Boolean> {
                         if (index !in code.indices || output[index] != code[index]) {
                             return "" to false
                         }
-                        if(index > 8)
-                            println("Found partial: " + output.joinToString(","))
                     }
+                    if(output.size > 8)
+                        println("Found partial: " + output.joinToString(","))
                 }
             }
             //bdv
