@@ -71,14 +71,14 @@ private fun Computer.solve(code: List<Int>? = null): Pair<String, Boolean> {
                 output += cur.operand.combo(this).toInt() % 8
                 if (code != null) {
                     for (index in output.indices) {
-                        if(code == output) {
+                        if (code == output) {
                             return "" to true
                         }
                         if (index !in code.indices || output[index] != code[index]) {
                             return "" to false
                         }
                     }
-                    if(output.size > 9)
+                    if (output.size > 9)
                         println("Found partial: " + output.joinToString(","))
                 }
             }
@@ -88,6 +88,30 @@ private fun Computer.solve(code: List<Int>? = null): Pair<String, Boolean> {
             7 -> c = truncate(a / (2.0.pow(cur.operand.combo(this).toInt()))).toLong()
         }
         pointer++
+    }
+    return output.joinToString(",") to (output == code)
+}
+
+private fun Computer.solveHardcoded(code: List<Int>): Pair<String, Boolean> {
+
+    val output = mutableListOf<Int>()
+    while (true) {
+        //2,4
+        b = a % 8
+        //1,1
+        b = b xor 1
+        // 7,5
+        c = truncate(a / (2.0.pow(b.toInt()))).toLong()
+        //0,3
+        a /= 8
+        // 4,3
+        b = b xor c
+        // 1,6
+        b = b xor 6
+        // 5,5,
+        output.add((b % 8).toInt())
+        // 3,0
+        if (a == 0L) break
     }
     return output.joinToString(",") to (output == code)
 }
