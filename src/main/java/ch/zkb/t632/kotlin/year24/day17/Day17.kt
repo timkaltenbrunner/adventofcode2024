@@ -22,14 +22,30 @@ fun main() {
     val input = readInput("2024", "Day17")
     println("Solution of Part1: ${part1(input)}")
 
-    // println("Solution of Part2: ${part2(input)}")
+    val testInputB = readInput("2024", "Day17_testb")
+    check(part2(testInputB), 117440)
+
+    println("Solution of Part2: ${part2(input)}")
 }
 
-private fun part1(input: List<String>): String = input.parseInputs().solve()
+private fun part1(input: List<String>): String = input.parseInputs().solve().first
 
-private fun part2(input: List<String>): String = input.parseInputs().solve()
+private fun part2(input: List<String>): Int = input.parseInputs().solveb()
 
-private fun Computer.solve(): String {
+private fun Computer.solveb(): Int {
+    val sol = inst.flatMap { listOf(it.opcode, it.operand) }.toList()
+    var registerA = 0
+    do {
+        val comp = this.copy(a = ++registerA)
+        if (registerA < 0) {
+            return -1
+        }
+    } while (!comp.solve(sol).second)
+    println("Found: $registerA")
+    return registerA
+}
+
+private fun Computer.solve(code: List<Int>? = null): Pair<String, Boolean> {
     var pointer = 0
     val output = mutableListOf<Int>()
     while (pointer in inst.indices) {
@@ -51,7 +67,21 @@ private fun Computer.solve(): String {
             //bxc
             4 -> b = b xor c
             //out
-            5 -> output += cur.operand.combo(this) % 8
+            5 -> {
+                output += cur.operand.combo(this) % 8
+                if (code != null) {
+                    for (index in output.indices) {
+                        if(code == output) {
+                            return "" to true
+                        }
+                        if (index !in code.indices || output[index] != code[index]) {
+                            return "" to false
+                        }
+                        if(index > 8)
+                            println("Found partial: " + output.joinToString(","))
+                    }
+                }
+            }
             //bdv
             6 -> b = truncate(a / (2.0.pow(cur.operand.combo(this)))).toInt()
             //cdv
@@ -59,7 +89,7 @@ private fun Computer.solve(): String {
         }
         pointer++
     }
-    return output.joinToString(",")
+    return output.joinToString(",") to (output == code)
 }
 
 private fun Int.combo(com: Computer): Int {
