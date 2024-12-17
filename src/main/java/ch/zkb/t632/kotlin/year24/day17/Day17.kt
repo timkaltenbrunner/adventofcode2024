@@ -41,17 +41,11 @@ private fun Computer.solveb(): Long {
     var registerA: Long
     var minByBinary = Long.MAX_VALUE
     do {
-        // registerA = counter++
         registerA = search
         val comp = this.copy(a = registerA)
         val current = comp.solveHardcoded()
         val currentRev = current.reversed()
-
-        if (isSmaller(currentRev, solReversed)) {
-            search += search / 32
-        } else {
-            search -= search / 32
-        }
+        if (isSmaller(currentRev, solReversed)) search += search / 32 else search -= search / 32
         if (currentRev.take(18) == solReversed.take(18)) {
             minByBinary = min(minByBinary, registerA)
             println("Value $registerA Current: $currentRev")
@@ -66,11 +60,6 @@ private fun Computer.solveb(): Long {
         val comp = this.copy(a = registerA)
         val current = comp.solveHardcoded()
         val currentRev = current.reversed()
-        if (currentRev.take(20) == solReversed.take(20)) {
-            println("Value $registerA Current: $currentRev")
-            println("Value $registerA Solutio: $solReversed")
-            println()
-        }
     } while (currentRev != solReversed)
 
     println("Found: $registerA")
@@ -136,13 +125,9 @@ private fun Int.combo(com: Computer): Long {
     error("Should not happen")
 }
 
-private data class Inst(val opcode: Int, val operand: Int) {
+private data class Inst(val opcode: Int, val operand: Int)
 
-}
-
-private data class Computer(var a: Long, var b: Long, var c: Long, val inst: List<Inst>) {
-
-}
+private data class Computer(var a: Long, var b: Long, var c: Long, val inst: List<Inst>)
 
 private fun List<String>.parseInputs(): Computer {
     val register = this[0].split(",").map { it.toLong() }
