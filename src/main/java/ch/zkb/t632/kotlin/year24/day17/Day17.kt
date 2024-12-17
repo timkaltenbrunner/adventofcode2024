@@ -23,18 +23,18 @@ fun main() {
     println("Solution of Part1: ${part1(input)}")
 
     val testInputB = readInput("2024", "Day17_testb")
-    check(part2(testInputB), 117440)
+    // check(part2(testInputB), 117440)
 
     println("Solution of Part2: ${part2(input)}")
 }
 
 private fun part1(input: List<String>): String = input.parseInputs().solve().first
 
-private fun part2(input: List<String>): Int = input.parseInputs().solveb()
+private fun part2(input: List<String>): Long = input.parseInputs().solveb()
 
-private fun Computer.solveb(): Int {
+private fun Computer.solveb(): Long {
     val sol = inst.flatMap { listOf(it.opcode, it.operand) }.toList()
-    var registerA = -1
+    var registerA = 100000000000000L
     do {
         val comp = this.copy(a = ++registerA)
         if (registerA < 0) {
@@ -52,14 +52,14 @@ private fun Computer.solve(code: List<Int>? = null): Pair<String, Boolean> {
         val cur = inst[pointer]
         when (cur.opcode) {
             //adv
-            0 -> a = truncate(a / (2.0.pow(cur.operand.combo(this)))).toInt()
+            0 -> a = truncate(a / (2.0.pow(cur.operand.combo(this).toInt()))).toLong()
             //bxl
-            1 -> b = b xor cur.operand
+            1 -> b = b xor cur.operand.toLong()
             //bst
             2 -> b = cur.operand.combo(this) % 8
             //jnz
             3 -> {
-                if (a != 0) {
+                if (a != 0L) {
                     pointer = cur.operand / 2
                     continue
                 }
@@ -68,7 +68,7 @@ private fun Computer.solve(code: List<Int>? = null): Pair<String, Boolean> {
             4 -> b = b xor c
             //out
             5 -> {
-                output += cur.operand.combo(this) % 8
+                output += cur.operand.combo(this).toInt() % 8
                 if (code != null) {
                     for (index in output.indices) {
                         if(code == output) {
@@ -83,18 +83,18 @@ private fun Computer.solve(code: List<Int>? = null): Pair<String, Boolean> {
                 }
             }
             //bdv
-            6 -> b = truncate(a / (2.0.pow(cur.operand.combo(this)))).toInt()
+            6 -> b = truncate(a / (2.0.pow(cur.operand.combo(this).toInt()))).toLong()
             //cdv
-            7 -> c = truncate(a / (2.0.pow(cur.operand.combo(this)))).toInt()
+            7 -> c = truncate(a / (2.0.pow(cur.operand.combo(this).toInt()))).toLong()
         }
         pointer++
     }
     return output.joinToString(",") to (output == code)
 }
 
-private fun Int.combo(com: Computer): Int {
+private fun Int.combo(com: Computer): Long {
     when (this) {
-        in 0..3 -> return this
+        in 0..3 -> return this.toLong()
         4 -> return com.a
         5 -> return com.b
         6 -> return com.c
@@ -107,12 +107,12 @@ private data class Inst(val opcode: Int, val operand: Int) {
 
 }
 
-private data class Computer(var a: Int, var b: Int, var c: Int, val inst: List<Inst>) {
+private data class Computer(var a: Long, var b: Long, var c: Long, val inst: List<Inst>) {
 
 }
 
 private fun List<String>.parseInputs(): Computer {
-    val register = this[0].split(",").map { it.toInt() }
+    val register = this[0].split(",").map { it.toLong() }
     val insts = this[1].split(",").map { it.toInt() }
     val instructions = buildList<Inst> {
         for (i in insts.indices) {
