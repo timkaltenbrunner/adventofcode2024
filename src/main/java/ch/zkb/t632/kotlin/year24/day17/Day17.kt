@@ -78,7 +78,7 @@ private fun Computer.solve(code: List<Int>? = null): Pair<String, Boolean> {
                             return "" to false
                         }
                     }
-                    if(output.size > 8)
+                    if(output.size > 9)
                         println("Found partial: " + output.joinToString(","))
                 }
             }
