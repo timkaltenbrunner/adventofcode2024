@@ -43,7 +43,7 @@ private fun Computer.solveb(): Long {
     do {
         registerA = search
         val comp = this.copy(a = registerA)
-        val current = comp.solveHardcoded()
+        val current = comp.solve()
         val currentRev = current.reversed()
         if (isSmaller(currentRev, solReversed)) search += search / 32 else search -= search / 32
         if (currentRev.take(18) == solReversed.take(18)) {
@@ -58,7 +58,7 @@ private fun Computer.solveb(): Long {
     do {
         registerA = minByBinary++
         val comp = this.copy(a = registerA)
-        val current = comp.solveHardcoded()
+        val current = comp.solve()
         val currentRev = current.reversed()
     } while (currentRev != solReversed)
 
@@ -102,7 +102,7 @@ private fun Computer.solve(): String {
             4 -> b = b xor c
             //out
             5 -> {
-                output += cur.operand.combo(this).toInt() % 8
+                output += (cur.operand.combo(this) % 8).toInt()
             }
             //bdv
             6 -> b = truncate(a / (2.0.pow(cur.operand.combo(this).toInt()))).toLong()
@@ -142,7 +142,7 @@ private fun List<String>.parseInputs(): Computer {
     return Computer(register[0], register[1], register[2], instructions)
 }
 
-
+/*
 private fun Computer.solveHardcoded(): String {
 
     val output = mutableListOf<Int>()
@@ -168,5 +168,6 @@ private fun Computer.solveHardcoded(): String {
     }
     return output.joinToString(",")
 }
+*/
 
 
