@@ -13,25 +13,25 @@ fun main() {
     val input = readInput("2024", "Day18")
     println("Solution of Part1: ${part1(input, 70, 1024)}")
 
-    check(part2(testInput, 6, 12), 20)
+    check(part2(testInput, 6, 12), Pos(6,1))
     println("Solution of Part2: ${part2(input, 70, 1024)}")
 }
 
 private fun part1(input: List<String>, size: Int, timePassed: Int): Int = input.parseInputs(size, timePassed).solveWithHeuristic()?.cost ?: -1
 
-private fun part2(input: List<String>, size: Int, timePassed: Int): Int {
+private fun part2(input: List<String>, size: Int, timePassed: Int): Pos {
     val map = input.parseInputs(size, timePassed)
     var node = map.solveWithHeuristic()
-    var paths = node!!.uniquePathPos()
+    var paths = node!!.path()
     while (true) {
         val newPos = map.notParsed.remove()
         map.walls.add(newPos.first)
         if (paths.contains(newPos.first)) {
             node = map.solveWithHeuristic()
             if (node == null) {
-                return newPos.second
+                return newPos.first
             }
-            paths = node.uniquePathPos()
+            paths = node.path()
         }
     }
 }
@@ -42,13 +42,6 @@ private fun Map.solveWithHeuristic(): Node? = aStarPath(
     neighboursWithCost = ::neighboursWithCost,
     size,
     heuristic = ::heuristic
-)
-
-private fun Map.solveWithoutHeuristic(): Node? = aStarPath(
-    from = start,
-    goal = ::isEnd,
-    neighboursWithCost = ::neighboursWithCost,
-    size
 )
 
 private data class Pos(val x: Int, val y: Int) {
@@ -73,7 +66,7 @@ private data class Map(var start: Pos, var end: Pos, val walls: MutableSet<Pos>,
     fun print(fkt: Map.() -> Node?): Node? {
         val ret = fkt(this)
         if (ret != null) {
-            val unique = ret.uniquePathPos()
+            val unique = ret.path()
             println()
             for (y in 0..walls.maxBy { it.y }.y) {
                 println()
@@ -110,20 +103,14 @@ private fun List<String>.parseInputs(size: Int, timePassed: Int): Map {
 }
 
 private data class Node(
-    val parents: MutableList<Node>,
+    val parent: Node?,
     val pos: Pos,
     val cost: Int,
     val heuristic: Int,
 ) {
-    fun uniquePathPos(): Set<Pos> {
-        return buildSet {
-            add(pos)
-            for (parent in parents) {
-                addAll(parent.uniquePathPos())
-            }
-        }
-    }
+    fun path(): Set<Pos> = (parent?.path() ?: emptySet()) + pos
 }
+
 
 private fun aStarPath(
     from: Pos,
@@ -132,28 +119,20 @@ private fun aStarPath(
     size: Int,
     heuristic: (Pos) -> Int = { 0 }
 ): Node? {
-    val visited = mutableMapOf<Pos, Node>()
+    val visited = mutableSetOf<Pos>()
     val queue = PriorityQueue(compareBy<Node> { it.cost + it.heuristic })
-    queue += Node(mutableListOf(), from, 0, heuristic(from))
+    queue += Node(null, from, 0, heuristic(from))
+
     while (queue.isNotEmpty()) {
-        var current = queue.poll()
+        val current = queue.poll()
+
         if (goal(current.pos)) return current
 
-        val existingPath = visited[current.pos]
-        var check = existingPath == null
-        if (existingPath != null && existingPath.cost <= current.cost && existingPath.parents != current.parents) {
-            existingPath.parents += current.parents
-            current = existingPath
-            check = true
-        }
-        if (check) {
-            visited[current.pos] = current
-            for ((next, cost) in neighboursWithCost(current.pos, size)) {
-                if (visited[next] == null) {
-                    val node = Node(mutableListOf(current), next, current.cost + cost, heuristic(next))
-                    queue += node
-                }
-            }
+        for ((next, cost) in neighboursWithCost(current.pos, size)) {
+            if (next in visited) continue
+            visited += next
+
+            queue += Node(current, next, current.cost + cost, heuristic(next))
         }
     }
     return null
