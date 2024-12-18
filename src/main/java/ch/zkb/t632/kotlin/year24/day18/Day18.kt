@@ -100,23 +100,22 @@ private fun aStarPath(
     size: Int,
     heuristic: (Pos) -> Int = { 0 }
 ): Node? {
-    val visitedToCost = mutableMapOf<Pos, Int>()
+    val visited = mutableSetOf<Pos>()
     val queue = PriorityQueue(compareBy<Node> { it.cost + it.heuristic })
     queue += Node(null, from, 0, heuristic(from))
 
     while (queue.isNotEmpty()) {
         val current = queue.poll()
-
         if (goal(current.pos)) return current
-
+        visited += current.pos
         for ((next, cost) in neighboursWithCost(current.pos, size)) {
-            val visitedCost = visitedToCost[next]
-            val nextCost = current.cost + cost
-            if (visitedCost != null && visitedCost <= nextCost) {
-                continue
+            if (next in visited) continue
+            val nextNode = queue.find { node -> node.pos == next }
+            if (nextNode != null) {
+                if (nextNode.cost <= current.cost + cost) continue
+                queue -= nextNode
             }
-            visitedToCost[next] = nextCost
-            queue += Node(current, next, nextCost, heuristic(next))
+            queue += Node(current, next, current.cost + cost, heuristic(next))
         }
     }
     return null
