@@ -17,15 +17,7 @@ fun main() {
     println("Solution of Part2: ${part2(input, 70, 1024)}")
 }
 
-private fun part1(input: List<String>, size: Int, timePassed: Int): Int {
-    val temp = input.parseInputs(size, timePassed)
-    val first = temp.solveWithHeuristic()
-    val second = temp.solveWithoutHeuristic()
-    if (first != null && second != null) {
-        temp.print(first, second)
-    }
-    return first?.cost ?: -1
-}
+private fun part1(input: List<String>, size: Int, timePassed: Int): Int = input.parseInputs(size, timePassed).solveWithHeuristic()?.cost ?: -1
 
 private fun part2(input: List<String>, size: Int, timePassed: Int): Pos {
     val map = input.parseInputs(size, timePassed)
@@ -52,13 +44,6 @@ private fun Map.solveWithHeuristic(): Node? = aStarPath(
     heuristic = ::heuristic
 )
 
-private fun Map.solveWithoutHeuristic(): Node? = aStarPath(
-    from = start,
-    goal = ::isEnd,
-    neighboursWithCost = ::neighboursWithCost,
-    size
-)
-
 private data class Pos(val x: Int, val y: Int) {
     operator fun plus(other: Pos): Pos = Pos(x + other.x, y + other.y)
     fun neighbourSteps(): Set<Pos> = setOf(Pos(1, 0), Pos(-1, 0), Pos(0, 1), Pos(0, -1))
@@ -69,32 +54,13 @@ private data class Map(var start: Pos, var end: Pos, val walls: MutableSet<Pos>,
     fun heuristic(pos: Pos): Int =
         abs(end.x - pos.x) + abs(end.y - pos.y)
 
-    fun neighboursWithCost(current: Pos, size: Int): Set<Pair<Pos, Int>> = buildSet<Pair<Pos, Int>> {
+    fun neighboursWithCost(current: Pos, size: Int): Set<Pair<Pos, Int>> = buildSet {
         for (step in current.neighbourSteps()) {
             val pos = current + step
             if (pos !in walls && pos.x <= size && pos.x >= 0 && pos.y <= size && pos.y >= 0) {
                 add(pos to 1)
             }
         }
-    }
-
-    fun print(first: Node, second: Node) {
-        val u1 = first.path()
-        val u2 = second.path()
-
-        println("First cost: ${first.cost} Second cost: ${second.cost}")
-        for (y in 0..size) {
-            println()
-            for (x in 0..size) {
-                val pos = Pos(x, y)
-                if (pos in walls) print('#')
-                else if (pos in u1 && pos in u2) print('O')
-                else if (pos in u1) print("F")
-                else if (pos in u2) print("S")
-                else print(' ')
-            }
-        }
-        println()
     }
 }
 
@@ -146,7 +112,9 @@ private fun aStarPath(
         for ((next, cost) in neighboursWithCost(current.pos, size)) {
             val visitedCost = visitedToCost[next]
             val nextCost = current.cost + cost
-            if (visitedCost != null && visitedCost <= nextCost) continue
+            if (visitedCost != null && visitedCost <= nextCost) {
+                continue
+            }
             visitedToCost[next] = nextCost
             queue += Node(current, next, nextCost, heuristic(next))
         }
