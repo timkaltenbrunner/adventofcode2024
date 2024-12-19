@@ -35,23 +35,19 @@ private data class Puzzle(val towels: List<String>, val combinations: List<Strin
     fun possibilities(): Long {
         var solvable = 0L
         for (comb in combinations) {
-           solvable += isSolvable(comb)
+            solvable += isSolvable(comb)
         }
         return solvable
     }
 
     private fun isSolvable(comb: String, cache: MutableMap<String, Long> = mutableMapOf()): Long {
         if (comb.isEmpty()) return 1
-        val cached = cache[comb]
-        if (cached != null) {
-            return cached
+        return cache.getOrPut(comb) {
+            towels.sumOf { towel ->
+                val nextComb = comb.removePrefix(towel)
+                if (nextComb != comb) isSolvable(nextComb, cache) else 0
+            }
         }
-        val sum = towels.sumOf { towel ->
-            val nextComb = comb.removePrefix(towel)
-            if (nextComb != comb) isSolvable(nextComb, cache) else 0
-        }
-        cache[comb] = sum
-        return sum
     }
 }
 
@@ -73,5 +69,6 @@ private fun List<String>.parseInputs(): Puzzle {
 
     return Puzzle(towels, combinations)
 }
+
 
 
