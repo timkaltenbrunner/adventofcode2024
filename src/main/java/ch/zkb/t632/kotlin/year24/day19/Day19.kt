@@ -1,6 +1,5 @@
 package ch.zkb.t632.kotlin.year24.day19
 
-import java.util.PriorityQueue
 import ch.zkb.t632.kotlin.check
 import ch.zkb.t632.kotlin.readInput
 
@@ -12,72 +11,52 @@ fun main() {
     println("Solution of Part1: ${part1(input)}")
 
     check(part2(testInput), 16)
-    println("Solution of Part1: ${part2(input)}")
+    println("Solution of Part2: ${part2(input)}")
+
 
 }
 
-private fun part1(input: List<String>): Int = input.parseInputs().solve()
+private fun part1(input: List<String>): Long = input.parseInputs().solutions()
+private fun part2(input: List<String>): Long = input.parseInputs().possibilities()
 
-private fun part2(input: List<String>): Int = input.parseInputs().solve2()
 
+private data class Puzzle(val towels: List<String>, val combinations: List<String>) {
 
-fun neighboursWithCost(comb: String, maxTowelSize: Int, towels: Set<String>): Set<Pair<String, Int>> {
-    val neighboursWithCost = mutableSetOf<Pair<String, Int>>()
-    for (cur in 1..maxTowelSize) {
-        if (comb.length >= cur) {
-            val junk = comb.take(cur)
-            if (towels.contains(junk)) {
-                neighboursWithCost.add(comb.drop(cur) to junk.length)
-            }
-        }
-    }
-    return neighboursWithCost
-}
-
-private data class Puzzle(val towels: Set<String>, val combinations: List<String>, val maxTowelSize: Int) {
-
-    fun solve(): Int {
-        var solvable = 0;
+    fun solutions(): Long {
+        var solvable = 0L
         for (comb in combinations) {
-            val node = aStarPath(
-                from = comb,
-                goal = { it == "" },
-                neighboursWithCost = ::neighboursWithCost,
-                maxTowelSize = maxTowelSize,
-                towels = towels,
-                heuristic = { 0 }
-            )
-
-            if (node != null) {
+            if (isSolvable(comb) > 0) {
                 solvable++
             }
         }
         return solvable
     }
 
-    fun solve2(): Int {
-        var solvable = 0;
+    fun possibilities(): Long {
+        var solvable = 0L
         for (comb in combinations) {
-            val node = aStarPath(
-                from = comb,
-                goal = { it == "" },
-                neighboursWithCost = ::neighboursWithCost,
-                maxTowelSize = maxTowelSize,
-                towels = towels,
-                heuristic = { 0 }
-            )
-
-            if (node != null) {
-                solvable += node.numPath()
-            }
+           solvable += isSolvable(comb)
         }
         return solvable
     }
+
+    private fun isSolvable(comb: String, cache: MutableMap<String, Long> = mutableMapOf()): Long {
+        if (comb.isEmpty()) return 1
+        val cached = cache[comb]
+        if (cached != null) {
+            return cached
+        }
+        val sum = towels.sumOf { towel ->
+            val nextComb = comb.removePrefix(towel)
+            if (nextComb != comb) isSolvable(nextComb, cache) else 0
+        }
+        cache[comb] = sum
+        return sum
+    }
 }
 
-
 private fun List<String>.parseInputs(): Puzzle {
-    val towels = mutableSetOf<String>()
+    val towels = mutableListOf<String>()
     val combinations = mutableListOf<String>()
     var parseTowels = true
     for (row in this) {
@@ -92,61 +71,7 @@ private fun List<String>.parseInputs(): Puzzle {
         }
     }
 
-    return Puzzle(towels, combinations, towels.maxOf { it.length })
-}
-
-private data class Node(
-    val parents: MutableList<Node>,
-    val comb: String,
-    val cost: Int,
-    val heuristic: Int,
-) {
-    fun numPath(): Int {
-        if (parents.isEmpty()) {
-            return 1
-        }
-        var path = 0
-        for (parent in parents) {
-            path += parent.numPath()
-        }
-        return path
-    }
-}
-
-
-private fun aStarPath(
-    from: String,
-    goal: (String) -> Boolean,
-    neighboursWithCost: (String, Int, Set<String>) -> Set<Pair<String, Int>>,
-    maxTowelSize: Int,
-    towels: Set<String>,
-    heuristic: (String) -> Int
-): Node? {
-    val visited = mutableMapOf<String, Node>()
-    val queue = PriorityQueue(compareBy<Node> { it.cost + it.heuristic })
-    queue += Node(mutableListOf(), from, 0, heuristic(from))
-
-    while (queue.isNotEmpty()) {
-        val current = queue.poll()
-        if (goal(current.comb)) return current
-        visited[current.comb] = current
-        for ((next, cost) in neighboursWithCost(current.comb, maxTowelSize, towels)) {
-            val alrVis = visited[next]
-            if (alrVis != null) {
-                if (alrVis.cost >= current.cost + cost) {
-                    alrVis.parents += current
-                }
-                continue
-            }
-            val nextNode = queue.find { node -> node.comb == next }
-            if (nextNode != null) {
-                if (nextNode.cost <= current.cost + cost) continue
-                queue -= nextNode
-            }
-            queue += Node(mutableListOf(current), next, current.cost + cost, heuristic(next))
-        }
-    }
-    return null
+    return Puzzle(towels, combinations)
 }
 
 
