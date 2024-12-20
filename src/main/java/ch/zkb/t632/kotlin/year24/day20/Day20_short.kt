@@ -1,7 +1,6 @@
-package ch.zkb.t632.kotlin.year24.day22
+package ch.zkb.t632.kotlin.year24.day20_short
 
 import kotlin.math.abs
-import kotlin.math.max
 import ch.zkb.t632.kotlin.check
 import ch.zkb.t632.kotlin.parallelMap
 import ch.zkb.t632.kotlin.readInput
@@ -23,44 +22,32 @@ private data class Pos(val x: Int, val y: Int) {
     operator fun plus(other: Pos): Pos = Pos(x + other.x, y + other.y)
     fun neighbourSteps(): Set<Pos> = setOf(Pos(1, 0), Pos(-1, 0), Pos(0, 1), Pos(0, -1))
 
-    fun findPathsInCheatTime(cheatTime: Int, paths: List<Pos>, map: Map, minSaved: Int): Int {
-        var ret = 0
-        val currentPos = paths.indexOf(this)
-        for ((index, pos) in paths.withIndex()) {
-            if (pos != this) {
-                val distance = abs(this.x - pos.x) + abs(this.y - pos.y)
-                if (index > currentPos) {
-                    val savedTime = index - currentPos
-                    if (distance <= cheatTime && distance + minSaved <= savedTime) {
-                        ret++
-                    }
-                }
-            }
-        }
-        return ret
-    }
+    fun findPathsInCheatTime(cheatTime: Int, remainingPath: List<Pos>, minSaved: Int): Int = remainingPath.mapIndexed { index, pos ->
+        val distance = abs(this.x - pos.x) + abs(this.y - pos.y)
+        val savedTime = index + 1
+        if (distance <= cheatTime && distance + minSaved <= savedTime) 1 else 0
+    }.sum()
 }
 
-private data class Map(var start: Pos, var end: Pos, val walls: Set<Pos>, val maxX: Int, val maxY: Int) {
+private data class Map(var start: Pos, var end: Pos, val walls: Set<Pos>) {
     fun solve(minSaved: Int, cheatTime: Int): Int {
         val path = findPath()
         return path.parallelMap {
-            it.findPathsInCheatTime(cheatTime, path, this, minSaved)
+            it.findPathsInCheatTime(cheatTime, path.drop(path.indexOf(it) + 1), minSaved)
         }.sum()
     }
 
-    private fun findPath(): List<Pos> {
-        val path = mutableListOf(start)
-        while (path.last() != end) {
-            for (ns in path.last().neighbourSteps()) {
-                val next = path.last() + ns
-                val lastIndex = path.size - 2
-                if (next !in walls && (lastIndex < 0 || next != path[lastIndex])) {
-                    path += next
+    private fun findPath(): List<Pos> = buildList {
+        add(start)
+        while (last() != end) {
+            for (ns in last().neighbourSteps()) {
+                val next = last() + ns
+                val lastIndex = size - 2
+                if (next !in walls && (lastIndex < 0 || next != get(lastIndex))) {
+                    add(next)
                 }
             }
         }
-        return path
     }
 }
 
@@ -68,12 +55,8 @@ private fun List<String>.parseInputs(): Map {
     var start = Pos(0, 0)
     var end = Pos(0, 0)
     val walls = mutableSetOf<Pos>()
-    var maxX = 0
-    var maxY = 0
     for ((y, row) in withIndex()) {
-        maxY = max(maxY, y)
         for ((x, ch) in row.withIndex()) {
-            maxX = max(maxX, x)
             when (ch) {
                 'S' -> start = Pos(x, y)
                 'E' -> end = Pos(x, y)
@@ -81,7 +64,7 @@ private fun List<String>.parseInputs(): Map {
             }
         }
     }
-    return Map(start, end, walls, maxX, maxY)
+    return Map(start, end, walls)
 }
 
 
