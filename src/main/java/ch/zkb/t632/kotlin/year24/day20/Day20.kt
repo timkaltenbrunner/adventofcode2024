@@ -4,6 +4,7 @@ import java.util.PriorityQueue
 import kotlin.math.abs
 import kotlin.math.max
 import ch.zkb.t632.kotlin.check
+import ch.zkb.t632.kotlin.parallelMap
 import ch.zkb.t632.kotlin.readInput
 
 fun main() {
@@ -17,7 +18,7 @@ fun main() {
     println("Solution of Part2: ${solve(input, 100, 20)}")
 }
 
-private fun solve(input: List<String>, minSaved: Int, cheatTime: Int = 1): Int = input.parseInputs().solve(minSaved, cheatTime)
+private fun solve(input: List<String>, minSaved: Int, cheatTime: Int = 2): Int = input.parseInputs().solve(minSaved, cheatTime)
 
 private fun Map.solveAStar(): Node? = aStarPath(
     from = start,
@@ -26,25 +27,21 @@ private fun Map.solveAStar(): Node? = aStarPath(
     heuristic = ::heuristic
 )
 
-private fun Map.onlyWalls(start: Pos, end: Pos, maxCost: Int): Boolean = aStarPath(
-    from = start,
-    goal = { it == end },
-    neighboursWithCost = { wallNeighboursWithCost(it, end) },
-    heuristic = ::heuristic,
-    maxCost + 100
-) != null
-
 private data class Pos(val x: Int, val y: Int) {
     operator fun plus(other: Pos): Pos = Pos(x + other.x, y + other.y)
     fun neighbourSteps(): Set<Pos> = setOf(Pos(1, 0), Pos(-1, 0), Pos(0, 1), Pos(0, -1))
-    fun findPathsInCheatTime(cheatTime: Int, paths: List<Pos>, map: Map, checkedPaths: MutableSet<Set<Pos>>): List<Pair<Pos, Int>> {
-        val ret = mutableListOf<Pair<Pos, Int>>()
-        for (pos in paths) {
-            if (pos != this && !checkedPaths.contains(setOf(pos, this))) {
+
+    fun findPathsInCheatTime(cheatTime: Int, paths: List<Pos>, map: Map, minSaved: Int): Int {
+        var ret = 0
+        val currentPos = paths.indexOf(this)
+        for ((index, pos) in paths.withIndex()) {
+            if (pos != this) {
                 val distance = abs(this.x - pos.x) + abs(this.y - pos.y)
-                if (distance <= cheatTime + 1) {
-                    if (map.onlyWalls(this, pos, cheatTime + 1))
-                        ret += pos to distance
+                if (index > currentPos) {
+                    val savedTime = index - currentPos
+                    if (distance <= cheatTime && distance + minSaved <= savedTime) {
+                        ret++
+                    }
                 }
             }
         }
@@ -66,42 +63,18 @@ private data class Map(var start: Pos, var end: Pos, val walls: Set<Pos>, val ma
         }
     }
 
-    fun wallNeighboursWithCost(current: Pos, end: Pos): Set<Pair<Pos, Int>> = buildSet {
-        for (step in current.neighbourSteps()) {
-            val pos = current + step
-            if (pos in walls || pos == end) {
-                add(pos to 1)
-            }
-        }
-    }
-
     fun solve(minSaved: Int, cheatTime: Int): Int {
         val shortest = solveAStar()
-        var shortestPathInRange = 0
-        val checkedPaths = mutableSetOf<Set<Pos>>()
+
         if (shortest != null) {
             val paths = shortest.path()
-            for (pos in paths) {
-                val pathsInCheatTime = pos.findPathsInCheatTime(cheatTime, paths, this, checkedPaths)
-                for ((posInCheatTime, cost) in pathsInCheatTime) {
-                    val checkSet = setOf(pos, posInCheatTime)
-                    if (!checkedPaths.contains(checkSet)) {
-                        checkedPaths += checkSet
-
-                        val savedTime = paths.savedTime(pos, posInCheatTime)
-                        if (savedTime >= minSaved + cost) {
-                            shortestPathInRange++
-                        }
-                    }
-                }
-            }
+            return paths.parallelMap {
+                it.findPathsInCheatTime(cheatTime, paths, this, minSaved)
+            }.sum()
         }
-        return shortestPathInRange
+        return -1
     }
 }
-
-private fun List<Pos>.savedTime(pos: Pos, posInCheatTime: Pos): Int = abs(this.indexOf(pos) - this.indexOf(posInCheatTime))
-
 
 private fun List<String>.parseInputs(): Map {
     var start = Pos(0, 0)
@@ -137,8 +110,7 @@ private fun aStarPath(
     from: Pos,
     goal: (Pos) -> Boolean,
     neighboursWithCost: (Pos) -> Set<Pair<Pos, Int>>,
-    heuristic: (Pos) -> Int = { 0 },
-    maxCost: Int = Int.MAX_VALUE
+    heuristic: (Pos) -> Int = { 0 }
 ): Node? {
     val visited = mutableSetOf<Pos>()
     val queue = PriorityQueue(compareBy<Node> { it.cost + it.heuristic })
@@ -150,7 +122,6 @@ private fun aStarPath(
         visited += current.pos
         for ((next, cost) in neighboursWithCost(current.pos)) {
             if (next in visited) continue
-            if (current.cost + cost > maxCost) continue
             val nextNode = queue.find { node -> node.pos == next }
             if (nextNode != null) {
                 if (nextNode.cost <= current.cost + cost) continue
