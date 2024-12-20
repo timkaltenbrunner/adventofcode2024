@@ -1,26 +1,23 @@
 package ch.zkb.t632.kotlin.year24.day20
 
-import ch.zkb.t632.kotlin.check
-import ch.zkb.t632.kotlin.readInput
-import java.util.*
+import java.util.PriorityQueue
 import kotlin.math.abs
 import kotlin.math.max
+import ch.zkb.t632.kotlin.check
+import ch.zkb.t632.kotlin.readInput
 
 fun main() {
     val testInput = readInput("2024", "Day20_test")
-    check(part1(testInput, 1), 44)
+    check(solve(testInput, 1), 44)
 
     val input = readInput("2024", "Day20")
-    println("Solution of Part1: ${part1(input, 100)}")
+    println("Solution of Part1: ${solve(input, 100)}")
 
-    check(part2(testInput), 64)
-    println("Solution of Part2: ${part2(input)}")
+    check(solve(testInput, 50, 20), 285)
+    println("Solution of Part2: ${solve(input, 100, 20)}")
 }
 
-private fun part1(input: List<String>, minSaved: Int): Int = input.parseInputs().solve(minSaved)
-
-private fun part2(input: List<String>): Int =
-    input.parseInputs().print(Map::solveAStar)?.uniquePathPos()?.count() ?: -1
+private fun solve(input: List<String>, minSaved: Int, cheatTime: Int = 1): Int = input.parseInputs().solve(minSaved, cheatTime)
 
 private fun Map.solveAStar(): Node? = aStarPath(
     from = start,
@@ -31,53 +28,36 @@ private fun Map.solveAStar(): Node? = aStarPath(
 
 private data class Pos(val x: Int, val y: Int) {
     operator fun plus(other: Pos): Pos = Pos(x + other.x, y + other.y)
+    fun neighbourSteps(): Set<Pos> = setOf(Pos(1, 0), Pos(-1, 0), Pos(0, 1), Pos(0, -1))
 }
 
-private data class PosDir(val pos: Pos, val direction: Direction)
+private data class Map(var start: Pos, var end: Pos, val walls: Set<Pos>, val maxX: Int, val maxY: Int) {
+    fun isEnd(pos: Pos): Boolean = pos == end
+    fun heuristic(pos: Pos): Int =
+        abs(end.x - pos.x) + abs(end.y - pos.y)
 
-private data class Map(var start: PosDir, var end: Pos, val walls: Set<Pos>, val maxX: Int, val maxY: Int) {
-    fun isEnd(posDir: PosDir): Boolean = posDir.pos == end
-    fun heuristic(posDir: PosDir): Int =
-        abs(end.x - posDir.pos.x) + abs(end.y - posDir.pos.y)
-
-    fun neighboursWithCost(current: PosDir): Set<Pair<PosDir, Int>> = buildSet<Pair<PosDir, Int>> {
-        for (step in current.direction.neighbourSteps()) {
-            val pos = current.pos + step.pos
+    fun neighboursWithCost(current: Pos): Set<Pair<Pos, Int>> = buildSet {
+        for (step in current.neighbourSteps()) {
+            val pos = current + step
             if (pos !in walls) {
-                add(PosDir(pos, step.direction) to 1 + if (current.direction == step.direction) 0 else 1000)
+                add(pos to 1)
             }
         }
     }
 
-    fun print(fkt: Map.() -> Node?): Node? {
-        val ret = fkt(this)
-        if (ret != null) {
-            val unique = ret.uniquePathPos()
-            println()
-            for (y in 0..walls.maxBy { it.y }.y) {
-                println()
-                for (x in 0..walls.maxBy { it.x }.x) {
-                    val pos = Pos(x, y)
-                    if (pos in walls) print('#')
-                    else if (pos in unique) print('O')
-                    else print(' ')
-                }
-            }
-            println()
-        }
-        return ret;
-    }
-
-    fun solve(minSaved: Int): Int {
+    fun solve(minSaved: Int, cheatTime: Int): Int {
         val shortest = solveAStar()?.cost
         var shortestPathInRange = 0
         if (shortest != null) {
             for ((index, wall) in walls.withIndex()) {
                 if (wall.x > 0 && wall.x < maxX && wall.y > 0 && wall.y < maxY) {
-                    val newShortest = this.copy(walls = walls.drop(index).toSet()).solveAStar()?.cost
-                    if (newShortest != null) {
-                        if (newShortest + minSaved <= shortest) {
-                            shortestPathInRange++
+                    if ((wall.copy(x = wall.x - 1) !in walls && wall.copy(x = wall.x + 1) !in walls) || (wall.copy(y = wall.y - 1) !in walls && wall.copy(y = wall.y + 1) !in walls)) {
+                        val newWalls = walls - wall
+                        val newShortest = this.copy(walls = newWalls).solveAStar()?.cost
+                        if (newShortest != null) {
+                            if (newShortest + minSaved <= shortest) {
+                                shortestPathInRange++
+                            }
                         }
                     }
                 }
@@ -87,23 +67,9 @@ private data class Map(var start: PosDir, var end: Pos, val walls: Set<Pos>, val
     }
 }
 
-private enum class Direction() {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT;
-
-    fun neighbourSteps(): Set<PosDir> = when (this) {
-        UP -> setOf(PosDir(Pos(-1, 0), LEFT), PosDir(Pos(1, 0), RIGHT), PosDir(Pos(0, -1), UP))
-        DOWN -> setOf(PosDir(Pos(-1, 0), LEFT), PosDir(Pos(1, 0), RIGHT), PosDir(Pos(0, 1), DOWN))
-        RIGHT -> setOf(PosDir(Pos(0, -1), UP), PosDir(Pos(0, 1), DOWN), PosDir(Pos(1, 0), RIGHT))
-        LEFT -> setOf(PosDir(Pos(0, -1), UP), PosDir(Pos(0, 1), DOWN), PosDir(Pos(-1, 0), LEFT))
-    }
-}
-
 
 private fun List<String>.parseInputs(): Map {
-    var start = PosDir(Pos(0, 0), Direction.RIGHT)
+    var start = Pos(0, 0)
     var end = Pos(0, 0)
     val walls = mutableSetOf<Pos>()
     var maxX = 0
@@ -113,7 +79,7 @@ private fun List<String>.parseInputs(): Map {
         for ((x, ch) in row.withIndex()) {
             maxX = max(maxX, x)
             when (ch) {
-                'S' -> start = PosDir(Pos(x, y), Direction.RIGHT)
+                'S' -> start = Pos(x, y)
                 'E' -> end = Pos(x, y)
                 '#' -> walls.add(Pos(x, y))
             }
@@ -123,49 +89,37 @@ private fun List<String>.parseInputs(): Map {
 }
 
 private data class Node(
-    val parents: MutableList<Node>,
-    val posDir: PosDir,
+    val parent: Node?,
+    val pos: Pos,
     val cost: Int,
     val heuristic: Int,
 ) {
-    fun uniquePathPos(): Set<Pos> {
-        return buildSet {
-            add(posDir.pos)
-            for (parent in parents) {
-                addAll(parent.uniquePathPos())
-            }
-        }
-    }
+    fun path(): Set<Pos> = (parent?.path() ?: emptySet()) + pos
 }
 
-private fun aStarPath(
-    from: PosDir,
-    goal: (PosDir) -> Boolean,
-    neighboursWithCost: PosDir.() -> Set<Pair<PosDir, Int>>,
-    heuristic: (PosDir) -> Int = { 0 },
-): Node? {
-    val visited = mutableMapOf<PosDir, Node>()
-    val queue = PriorityQueue(compareBy<Node> { it.cost + it.heuristic })
-    queue += Node(mutableListOf(), from, 0, heuristic(from))
-    while (queue.isNotEmpty()) {
-        var current = queue.poll()
-        if (goal(current.posDir)) return current
 
-        val existingPath = visited[current.posDir]
-        var check = existingPath == null
-        if (existingPath != null && existingPath.cost <= current.cost && existingPath.parents != current.parents) {
-            existingPath.parents += current.parents
-            current = existingPath
-            check = true
-        }
-        if (check) {
-            visited[current.posDir] = current
-            for ((next, cost) in current.posDir.neighboursWithCost()) {
-                if (visited[next] == null) {
-                    val node = Node(mutableListOf(current), next, current.cost + cost, heuristic(next))
-                    queue += node
-                }
+private fun aStarPath(
+    from: Pos,
+    goal: (Pos) -> Boolean,
+    neighboursWithCost: (Pos) -> Set<Pair<Pos, Int>>,
+    heuristic: (Pos) -> Int = { 0 }
+): Node? {
+    val visited = mutableSetOf<Pos>()
+    val queue = PriorityQueue(compareBy<Node> { it.cost + it.heuristic })
+    queue += Node(null, from, 0, heuristic(from))
+
+    while (queue.isNotEmpty()) {
+        val current = queue.poll()
+        if (goal(current.pos)) return current
+        visited += current.pos
+        for ((next, cost) in neighboursWithCost(current.pos)) {
+            if (next in visited) continue
+            val nextNode = queue.find { node -> node.pos == next }
+            if (nextNode != null) {
+                if (nextNode.cost <= current.cost + cost) continue
+                queue -= nextNode
             }
+            queue += Node(current, next, current.cost + cost, heuristic(next))
         }
     }
     return null
